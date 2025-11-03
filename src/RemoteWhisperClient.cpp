@@ -6,6 +6,7 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <wx/ffile.h>
 
 #include <curl/curl.h>
 

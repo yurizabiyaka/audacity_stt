@@ -12,6 +12,7 @@
 #include <wx/stdpaths.h>
 #include <wx/utils.h>
 #include <wx/translation.h>
+#include <wx/intl.h>
 
 #include "LabelTrack.h"
 #include "Project.h"
