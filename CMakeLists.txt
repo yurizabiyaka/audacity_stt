@@ -19,8 +19,8 @@ target_include_directories(mod-remote-whisper
 
 target_link_libraries(mod-remote-whisper
     PRIVATE
-        ${wxWidgets_LIBRARIES}
-        ${CURL_LIBRARIES}
+        wxWidgets::wxWidgets
+        CURL::libcurl
 )
 
 if(TARGET wxWidgets::wxWidgets)
