@@ -3,6 +3,7 @@
 #include <wx/config.h>
 #include <memory>
 #include <wx/translation.h>
+#include <wx/intl.h>
 #include "PrefsPanel.h"
 
 #include "ShuttleGui.h"

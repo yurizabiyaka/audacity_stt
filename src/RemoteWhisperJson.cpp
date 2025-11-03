@@ -1,6 +1,7 @@
 #include "RemoteWhisperJson.h"
 
 #include <wx/translation.h>
+#include <wx/intl.h>
 #include <cstdlib>
 #include <utility>
 #include <string>

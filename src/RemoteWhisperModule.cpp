@@ -2,6 +2,7 @@
 
 #include <wx/menu.h>
 #include <wx/msgdlg.h>
+#include <wx/intl.h>
 
 #include "Project.h"
 #include <wx/translation.h>
