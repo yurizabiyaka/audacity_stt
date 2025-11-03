@@ -27,12 +27,13 @@ if(TARGET wxWidgets::wxWidgets)
     target_link_libraries(mod-remote-whisper PRIVATE wxWidgets::wxWidgets)
 endif()
 
-find_package(CURL REQUIRED)
-find_package(wxWidgets REQUIRED COMPONENTS core base net)
+find_package(CURL CONFIG REQUIRED)
+find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base net)
 
-if(wxWidgets_FOUND)
-    include(${wxWidgets_USE_FILE})
-endif()
+#if(wxWidgets_FOUND)
+#    include(${wxWidgets_USE_FILE})
+#endif()
+target_link_libraries(mod-remote-whisper PRIVATE wxWidgets::wxWidgets)
 
 target_compile_definitions(mod-remote-whisper PRIVATE WXINTL_NO_GETTEXT_MACRO)
 
