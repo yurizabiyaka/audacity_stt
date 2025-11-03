@@ -34,8 +34,8 @@ void RemoteWhisperCommand::Run(AudacityProject &project)
 {
     if (!EnsureProjectHasAudio(project))
     {
-        wxMessageBox(_( "No audio tracks were found in the current project." ),
-                     _( "Remote Whisper Transcription" ), wxOK | wxICON_ERROR, project.GetProjectWindow());
+        wxMessageBox(wxGetTranslation(wxT("No audio tracks were found in the current project.")),
+                     wxGetTranslation(wxT("Remote Whisper Transcription")), wxOK | wxICON_ERROR, project.GetProjectWindow());
         return;
     }
 
@@ -43,8 +43,8 @@ void RemoteWhisperCommand::Run(AudacityProject &project)
     double offset = 0.0;
     if (!ExportSelectionToWave(project, audioPath, offset))
     {
-        wxMessageBox(_( "Unable to prepare audio for transcription." ),
-                     _( "Remote Whisper Transcription" ), wxOK | wxICON_ERROR, project.GetProjectWindow());
+        wxMessageBox(wxGetTranslation(wxT("Unable to prepare audio for transcription.")),
+                     wxGetTranslation(wxT("Remote Whisper Transcription")), wxOK | wxICON_ERROR, project.GetProjectWindow());
         return;
     }
 
@@ -53,14 +53,14 @@ void RemoteWhisperCommand::Run(AudacityProject &project)
     if (!RequestTranscription(audioPath, result, error))
     {
         wxMessageBox(error,
-                     _( "Remote Whisper Transcription" ), wxOK | wxICON_ERROR, project.GetProjectWindow());
+                     wxGetTranslation(wxT("Remote Whisper Transcription")), wxOK | wxICON_ERROR, project.GetProjectWindow());
         return;
     }
 
     if (!CreateOrUpdateLabelTrack(project, result, offset))
     {
-        wxMessageBox(_( "Unable to create label track for transcription results." ),
-                     _( "Remote Whisper Transcription" ), wxOK | wxICON_ERROR, project.GetProjectWindow());
+        wxMessageBox(wxGetTranslation(wxT("Unable to create label track for transcription results.")),
+                     wxGetTranslation(wxT("Remote Whisper Transcription")), wxOK | wxICON_ERROR, project.GetProjectWindow());
         return;
     }
 }
@@ -199,7 +199,7 @@ bool RemoteWhisperCommand::RequestTranscription(const wxFileName &path, RemoteWh
     auto settings = RemoteWhisperSettings::Load();
     if (settings.serverUrl.empty())
     {
-        error = _( "Remote Whisper server URL is not configured. Please update the plugin preferences." );
+        error = wxGetTranslation(wxT("Remote Whisper server URL is not configured. Please update the plugin preferences."));
         return false;
     }
 

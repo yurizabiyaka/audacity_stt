@@ -21,7 +21,7 @@ wxString RemoteWhisperModule::GetSymbol()
 
 wxString RemoteWhisperModule::GetDescription()
 {
-    return _( "Remote Whisper transcription using an external speech-to-text service" );
+    return wxGetTranslation(wxT("Remote Whisper transcription using an external speech-to-text service"));
 }
 
 wxString RemoteWhisperModule::GetVendor()
@@ -53,7 +53,7 @@ bool RemoteWhisperModule::RegisterModule(ModuleManagerInterface &moduleManager)
     moduleManager.RegisterModuleCommand(
         wxT("Tools"),
         wxT("remote-whisper-transcription"),
-        _( "Remote Whisper Transcription..." ),
+        wxGetTranslation(wxT("Remote Whisper Transcription...")),
         onCommand
     );
 

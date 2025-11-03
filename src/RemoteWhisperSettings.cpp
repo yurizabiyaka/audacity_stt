@@ -10,27 +10,27 @@
 
 namespace
 {
-constexpr auto kConfigPath = wxT("RemoteWhisper");
-constexpr auto kServerUrlKey = wxT("ServerUrl");
-constexpr auto kLanguageKey = wxT("Language");
+const wxString kConfigPath{wxT("RemoteWhisper")};
+const wxString kServerUrlKey{wxT("ServerUrl")};
+const wxString kLanguageKey{wxT("Language")};
 
 class RemoteWhisperPreferencesPage : public PrefsPanel
 {
 public:
     explicit RemoteWhisperPreferencesPage(wxWindow *parent)
-        : PrefsPanel(parent, wxID_ANY, _( "Remote Whisper" ))
+        : PrefsPanel(parent, wxID_ANY, wxGetTranslation(wxT("Remote Whisper")))
     {
         auto data = RemoteWhisperSettings::Load();
 
         ShuttleGui S(this, eIsCreating);
-        S.StartStatic(_( "Remote Whisper Service" ));
+        S.StartStatic(wxGetTranslation(wxT("Remote Whisper Service")));
         {
             S.StartTwoColumn();
             {
-                S.AddPrompt(_( "Service URL:" ));
+                S.AddPrompt(wxGetTranslation(wxT("Service URL:")));
                 mServerUrl = S.AddTextBox({}, data.serverUrl, 0);
 
-                S.AddPrompt(_( "Language (ISO code):" ));
+                S.AddPrompt(wxGetTranslation(wxT("Language (ISO code):")));
                 mLanguage = S.AddTextBox({}, data.language, 0);
             }
             S.EndTwoColumn();
@@ -57,7 +57,7 @@ RemoteWhisperSettingsData RemoteWhisperSettings::Load()
 {
     wxConfig config(wxT("audacity"));
     RemoteWhisperSettingsData data;
-    data.serverUrl = config.Read(kConfigPath + wxT("/" ) + kServerUrlKey, wxEmptyString);
+    data.serverUrl = config.Read(kConfigPath + wxT("/") + kServerUrlKey, wxEmptyString);
     data.language = config.Read(kConfigPath + wxT("/") + kLanguageKey, wxT("en"));
     return data;
 }

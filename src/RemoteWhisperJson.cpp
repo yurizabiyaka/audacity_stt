@@ -209,7 +209,7 @@ RemoteWhisperParseResult RemoteWhisperJsonParser::Parse(const wxString &json) co
 
     if (result.result.utterances.empty())
     {
-        result.errorMessage = _( "The transcription response did not contain any words." );
+        result.errorMessage = wxGetTranslation(wxT("The transcription response did not contain any words."));
         result.ok = false;
         return result;
     }
