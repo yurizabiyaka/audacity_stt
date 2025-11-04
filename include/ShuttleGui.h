@@ -31,6 +31,14 @@ public:
     {
     }
 
+    void StartNotebookPage(const wxString &)
+    {
+    }
+
+    void EndNotebookPage()
+    {
+    }
+
     void EndStatic()
     {
     }
