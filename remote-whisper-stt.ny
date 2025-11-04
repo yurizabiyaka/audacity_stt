@@ -48,6 +48,10 @@
 (defun get-temp-wav ()
   (strcat (get-temp-dir) "audacity-whisper-" (format nil "~a" (get-internal-real-time)) ".wav"))
 
+;; Generate a temporary output filename
+(defun get-temp-labels ()
+  (strcat (get-temp-dir) "audacity-whisper-labels-" (format nil "~a" (get-internal-real-time)) ".txt"))
+
 ;; Quote a path for shell command (Windows)
 (defun quote-path (path)
   (strcat "\"" path "\""))
@@ -67,52 +71,77 @@
         (setq text (subseq line (1+ tab2)))
         (list start end text)))))
 
+;; Read labels from a file
+(defun read-labels-from-file (filepath)
+  (let ((labels nil)
+        (in-file nil))
+    (setq in-file (open filepath :direction :input :if-does-not-exist nil))
+    (if in-file
+        (progn
+          (do ((line (read-line in-file nil) (read-line in-file nil)))
+              ((null line))
+            (when (> (length line) 0)
+              (let ((label (parse-label-line line)))
+                (when label
+                  (push label labels)))))
+          (close in-file)
+          (reverse labels))
+        (progn
+          (format t "ERROR: Could not open output file: ~a~%" filepath)
+          nil))))
+
 ;; Main processing function
 (defun process-audio ()
   (let ((temp-wav (get-temp-wav))
+        (temp-labels (get-temp-labels))
         (plugin-dir (get-plugin-dir))
         (helper-exe "whisper-helper.exe")
         (command nil)
+        (exit-code nil)
         (labels nil))
 
     ;; Build path to helper executable
     (setq helper-exe (strcat plugin-dir helper-exe))
 
-    ;; Check if helper exists (basic check)
-    (format t "Looking for helper at: ~a~%" helper-exe)
+    ;; Log what we're doing
+    (format t "Helper executable: ~a~%" helper-exe)
+    (format t "Temporary audio file: ~a~%" temp-wav)
+    (format t "Temporary labels file: ~a~%" temp-labels)
 
     ;; Export audio to temporary WAV file
-    (format t "Exporting audio to: ~a~%" temp-wav)
+    (format t "Exporting audio...~%")
     (s-save *track* ny:all temp-wav :format 'wav)
 
-    ;; Build the command
-    (setq command (format nil "~a ~a ~a ~a"
+    ;; Build the command with output file parameter
+    (setq command (format nil "~a ~a ~a ~a ~a"
                           (quote-path helper-exe)
                           (quote-path temp-wav)
                           (quote-path server-url)
-                          (quote-path language)))
+                          (quote-path language)
+                          (quote-path temp-labels)))
 
     (format t "Executing: ~a~%" command)
 
-    ;; Execute the helper and capture output
-    (let ((output (system command)))
-      (format t "Helper output: ~a~%" output)
+    ;; Execute the helper - system returns exit code (integer)
+    (setq exit-code (system command))
+    (format t "Helper exit code: ~a~%" exit-code)
 
-      ;; Parse the output lines
-      (if (stringp output)
-          (let ((lines (split-string output #\Newline)))
-            (dolist (line lines)
-              (when (> (length line) 0)
-                (let ((label (parse-label-line line)))
-                  (when label
-                    (push label labels))))))
-          (format t "ERROR: Helper returned non-string output~%")))
+    ;; Check if helper succeeded (exit code 0)
+    (if (= exit-code 0)
+        (progn
+          (format t "Helper succeeded, reading labels from file...~%")
+          (setq labels (read-labels-from-file temp-labels))
+          (if labels
+              (format t "Successfully read ~a labels~%" (length labels))
+              (format t "WARNING: No labels found in output file~%")))
+        (format t "ERROR: Helper failed with exit code ~a~%" exit-code))
 
-    ;; Clean up temporary file
+    ;; Clean up temporary files
     (system (strcat "del " (quote-path temp-wav)))
+    (system (strcat "del " (quote-path temp-labels)))
 
-    ;; Return labels in reverse order (they were pushed onto the list)
-    (reverse labels)))
+    ;; Return the labels
+    labels))
 
 ;; Helper to split string by delimiter
 (defun split-string (str delim)

@@ -6,12 +6,12 @@
   1. Reads a WAV file
   2. Sends it to a Whisper-compatible STT service via HTTP POST
   3. Parses the JSON response
-  4. Outputs Audacity label format to stdout
+  4. Writes Audacity label format to an output file
 
-  Usage: whisper-helper.exe <audio-file.wav> <server-url> <language>
-  Example: whisper-helper.exe audio.wav http://ai1:443/v1/files en
+  Usage: whisper-helper.exe <audio-file.wav> <server-url> <language> <output-file.txt>
+  Example: whisper-helper.exe audio.wav http://ai1:443/v1/files en labels.txt
 
-  Output format (tab-separated):
+  Output file format (tab-separated):
   0.000000	0.500000	Hello
   0.500000	1.000000	world
 
@@ -106,6 +106,9 @@ std::vector<Word> parseWords(const std::string &json)
         // Skip whitespace
         while (pos < json.size() && std::isspace(json[pos])) pos++;
 
+        // Check bounds after whitespace skip
+        if (pos >= json.size()) break;
+
         if (json[pos] == ']') break; // End of array
         if (json[pos] != '{') { pos++; continue; } // Not an object
 
@@ -178,16 +181,17 @@ std::string getFilename(const std::string &path)
 
 int main(int argc, char *argv[])
 {
-    if (argc < 4)
+    if (argc < 5)
     {
-        std::cerr << "Usage: " << argv[0] << " <audio-file.wav> <server-url> <language>" << std::endl;
-        std::cerr << "Example: " << argv[0] << " audio.wav http://ai1:443/v1/files en" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <audio-file.wav> <server-url> <language> <output-file.txt>" << std::endl;
+        std::cerr << "Example: " << argv[0] << " audio.wav http://ai1:443/v1/files en labels.txt" << std::endl;
         return 1;
     }
 
     const char *audioFile = argv[1];
     const char *serverUrl = argv[2];
     const char *language = argv[3];
+    const char *outputFile = argv[4];
 
     // Read the audio file
     std::ifstream file(audioFile, std::ios::binary | std::ios::ate);
@@ -259,11 +263,23 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Output in Audacity label format (tab-separated: start\tend\ttext)
+    // Write output to file in Audacity label format (tab-separated: start\tend\ttext)
+    std::ofstream outFile(outputFile);
+    if (!outFile.is_open())
+    {
+        std::cerr << "ERROR: Failed to open output file: " << outputFile << std::endl;
+        return 1;
+    }
+
     for (const auto &word : words)
     {
-        std::cout << word.start << "\t" << word.end << "\t" << word.text << std::endl;
+        outFile << word.start << "\t" << word.end << "\t" << word.text << std::endl;
     }
+
+    outFile.close();
+
+    // Output success message to stderr (since Nyquist can't capture stdout anyway)
+    std::cerr << "SUCCESS: Wrote " << words.size() << " labels to " << outputFile << std::endl;
 
     return 0;
 }
