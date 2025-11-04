@@ -23,6 +23,7 @@ public:
         auto data = RemoteWhisperSettings::Load();
 
         ShuttleGui S(this, eIsCreating);
+        S.StartNotebookPage(wxGetTranslation(wxT("Remote Whisper")));
         S.StartStatic(wxGetTranslation(wxT("Remote Whisper Service")));
         {
             S.StartTwoColumn();
@@ -36,6 +37,7 @@ public:
             S.EndTwoColumn();
         }
         S.EndStatic();
+        S.EndNotebookPage();
     }
 
     bool Commit() override
