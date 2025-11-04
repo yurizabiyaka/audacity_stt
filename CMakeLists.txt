@@ -24,19 +24,27 @@ add_library(mod-remote-whisper MODULE
 target_include_directories(mod-remote-whisper
     PRIVATE
         include
+        ${wxWidgets_INCLUDE_DIRS}
 )
 
-# Link libraries using imported targets
+# Link libraries
 target_link_libraries(mod-remote-whisper
     PRIVATE
-        wx::core
-        wx::base
-        wx::net
+        ${wxWidgets_LIBRARIES}
         CURL::libcurl
 )
 
-# Compile definitions
-target_compile_definitions(mod-remote-whisper PRIVATE WXINTL_NO_GETTEXT_MACRO)
+# Add wxWidgets definitions and flags
+target_compile_definitions(mod-remote-whisper 
+    PRIVATE 
+        ${wxWidgets_DEFINITIONS}
+        WXINTL_NO_GETTEXT_MACRO
+)
+
+target_compile_options(mod-remote-whisper
+    PRIVATE
+        ${wxWidgets_CXX_FLAGS}
+)
 
 # Installation rules
 install(TARGETS mod-remote-whisper

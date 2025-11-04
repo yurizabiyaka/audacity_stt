@@ -46,7 +46,7 @@ Example of the JSON response consumed by the plugin:
 3. Configure the project with CMake, pointing to the Audacity SDK location:
 
    ```bat
-   cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DAUDACITY_PATH="C:/path/to/audacity"
+   cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DAUDACITY_PATH="C:/Program Files/Audacity"
    ```
 
 4. Build the plugin in either Debug or Release configuration:
