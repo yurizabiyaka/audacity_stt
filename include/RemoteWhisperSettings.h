@@ -4,6 +4,8 @@
 #include <wx/string.h>
 #include "ShuttleGui.h"
 
+class wxWindow;
+
 struct RemoteWhisperSettingsData
 {
     wxString serverUrl;
@@ -19,4 +21,6 @@ public:
     static void Save(const RemoteWhisperSettingsData &data);
 
     static std::function<void(ShuttleGui &)> CreateFactory();
+
+    static bool ShowDialog(wxWindow *parent);
 };

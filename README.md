@@ -4,7 +4,7 @@ This repository contains an Audacity module that sends the current audio selecti
 
 ## Features
 
-* Configurable STT service URL and language (via **Edit → Preferences → Remote Whisper**).
+* Configurable STT service URL and language (via **Edit → Preferences → Remote Whisper** or **Tools → Remote Whisper Settings...**).
 * Sends the current project selection (or the entire project if nothing is selected) as a WAV file to the remote STT service using the HTTP API shown below.
 * Creates or refreshes a label track with word-level regions returned by the service.
 

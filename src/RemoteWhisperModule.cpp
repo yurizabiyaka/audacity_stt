@@ -57,6 +57,18 @@ bool RemoteWhisperModule::RegisterModule(ModuleManagerInterface &moduleManager)
         onCommand
     );
 
+    auto onSettings = [](AudacityProject &project) {
+        auto *parent = project.GetProjectWindow();
+        RemoteWhisperSettings::ShowDialog(parent);
+    };
+
+    moduleManager.RegisterModuleCommand(
+        wxT("Tools"),
+        wxT("remote-whisper-settings"),
+        wxGetTranslation(wxT("Remote Whisper Settings...")),
+        onSettings
+    );
+
     moduleManager.RegisterPreferencesFactory(
         RemoteWhisperSettings::CreateFactory()
     );

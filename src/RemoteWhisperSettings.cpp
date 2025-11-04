@@ -4,6 +4,9 @@
 #include <memory>
 #include <wx/translation.h>
 #include <wx/intl.h>
+#include <wx/dialog.h>
+#include <wx/sizer.h>
+#include <wx/button.h>
 #include "PrefsPanel.h"
 
 #include "ShuttleGui.h"
@@ -78,4 +81,26 @@ std::function<void(ShuttleGui &)> RemoteWhisperSettings::CreateFactory()
         auto panel = std::make_unique<RemoteWhisperPreferencesPage>(window);
         S.AddWindow(panel.release());
     };
+}
+
+bool RemoteWhisperSettings::ShowDialog(wxWindow *parent)
+{
+    wxDialog dialog(parent, wxID_ANY, wxGetTranslation(wxT("Remote Whisper Settings")),
+                    wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+
+    auto *panel = new RemoteWhisperPreferencesPage(&dialog);
+
+    auto *sizer = new wxBoxSizer(wxVERTICAL);
+    sizer->Add(panel, 1, wxEXPAND | wxALL, 10);
+
+    auto *buttonSizer = dialog.CreateStdDialogButtonSizer(wxOK | wxCANCEL);
+    if (buttonSizer)
+        sizer->Add(buttonSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 10);
+
+    dialog.SetSizerAndFit(sizer);
+
+    if (dialog.ShowModal() == wxID_OK)
+        return panel->Commit();
+
+    return false;
 }
