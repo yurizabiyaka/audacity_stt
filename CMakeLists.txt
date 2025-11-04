@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.15)
 project(audacity_remote_whisper LANGUAGES CXX)
 
+cmake_policy(SET CMP0091 NEW)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Find required packages (vcpkg will provide imported targets)
+find_package(wxWidgets REQUIRED COMPONENTS core base net)
+find_package(CURL REQUIRED)
+
+# Create the module library
 add_library(mod-remote-whisper MODULE
     src/RemoteWhisperModule.cpp
     src/RemoteWhisperCommand.cpp
@@ -12,31 +20,25 @@ add_library(mod-remote-whisper MODULE
     src/RemoteWhisperSettings.cpp
 )
 
+# Set include directories
 target_include_directories(mod-remote-whisper
     PRIVATE
         include
 )
 
+# Link libraries using imported targets
 target_link_libraries(mod-remote-whisper
     PRIVATE
-        wxWidgets::wxWidgets
+        wx::core
+        wx::base
+        wx::net
         CURL::libcurl
 )
 
-if(TARGET wxWidgets::wxWidgets)
-    target_link_libraries(mod-remote-whisper PRIVATE wxWidgets::wxWidgets)
-endif()
-
-find_package(CURL CONFIG REQUIRED)
-find_package(wxWidgets CONFIG REQUIRED COMPONENTS core base net)
-
-#if(wxWidgets_FOUND)
-#    include(${wxWidgets_USE_FILE})
-#endif()
-target_link_libraries(mod-remote-whisper PRIVATE wxWidgets::wxWidgets)
-
+# Compile definitions
 target_compile_definitions(mod-remote-whisper PRIVATE WXINTL_NO_GETTEXT_MACRO)
 
+# Installation rules
 install(TARGETS mod-remote-whisper
     LIBRARY DESTINATION "share/audacity/modules"
     RUNTIME DESTINATION "share/audacity/modules"

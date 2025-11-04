@@ -8,6 +8,16 @@ class ShuttleGui;
 
 class ModuleManagerInterface;
 
+enum ModuleDispatchTypes
+{
+    ModuleInitialize,
+    ModuleTerminate,
+    AppInitialized,
+    AppQuiting,
+    ProjectInitialized,
+    ProjectClosing
+};
+
 class ModuleInterface
 {
 public:

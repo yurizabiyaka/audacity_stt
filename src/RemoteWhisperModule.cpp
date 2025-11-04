@@ -64,9 +64,38 @@ bool RemoteWhisperModule::RegisterModule(ModuleManagerInterface &moduleManager)
     return true;
 }
 
-ModuleInterface *NewRemoteWhisperModule()
+// Required module entry points for Audacity
+extern "C" {
+
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+ModuleInterface *ModuleDispatch(ModuleDispatchTypes type)
 {
-    return new RemoteWhisperModule();
+    switch (type)
+    {
+    case ModuleInitialize:
+        return new RemoteWhisperModule();
+    default:
+        return nullptr;
+    }
 }
 
-DECLARE_MODULE(RemoteWhisperModule);
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+int GetModuleVersion()
+{
+    return 1;
+}
+
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
+const wchar_t *GetVersionString()
+{
+    // Return the Audacity version this module is compatible with
+    return L"3.7.5";
+}
+
+} // extern "C"
