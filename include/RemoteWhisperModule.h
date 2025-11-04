@@ -19,6 +19,9 @@ public:
     bool Initialize() override;
     void Terminate() override;
     bool RegisterModule(ModuleManagerInterface &moduleManager) override;
+
+    // Called when Audacity has finished initializing
+    void OnAppInitialized();
 };
 
 ModuleInterface *NewRemoteWhisperModule();

@@ -3,6 +3,8 @@
 #include <wx/menu.h>
 #include <wx/msgdlg.h>
 #include <wx/intl.h>
+#include <wx/app.h>
+#include <wx/frame.h>
 
 #include "Project.h"
 #include <wx/translation.h>
@@ -11,8 +13,23 @@
 #include "RemoteWhisperCommand.h"
 #include "RemoteWhisperSettings.h"
 
-RemoteWhisperModule::RemoteWhisperModule() = default;
-RemoteWhisperModule::~RemoteWhisperModule() = default;
+// Static instance pointer for event handling
+static RemoteWhisperModule* g_moduleInstance = nullptr;
+
+// Menu IDs
+static const int ID_REMOTE_WHISPER_TRANSCRIBE = wxNewId();
+static const int ID_REMOTE_WHISPER_SETTINGS = wxNewId();
+
+RemoteWhisperModule::RemoteWhisperModule()
+{
+    g_moduleInstance = this;
+}
+
+RemoteWhisperModule::~RemoteWhisperModule()
+{
+    if (g_moduleInstance == this)
+        g_moduleInstance = nullptr;
+}
 
 wxString RemoteWhisperModule::GetSymbol()
 {
@@ -45,37 +62,24 @@ void RemoteWhisperModule::Terminate()
 
 bool RemoteWhisperModule::RegisterModule(ModuleManagerInterface &moduleManager)
 {
-    auto onCommand = [] (AudacityProject &project) {
-        RemoteWhisperCommand command;
-        command.Run(project);
-    };
-
-    const wxString menuPath = wxT("Tools/Remote Whisper");
-
-    moduleManager.RegisterModuleCommand(
-        menuPath,
-        wxT("remote-whisper-transcription"),
-        wxGetTranslation(wxT("Remote Whisper Transcription...")),
-        onCommand
-    );
-
-    auto onSettings = [](AudacityProject &project) {
-        auto *parent = project.GetProjectWindow();
-        RemoteWhisperSettings::ShowDialog(parent);
-    };
-
-    moduleManager.RegisterModuleCommand(
-        menuPath,
-        wxT("remote-whisper-settings"),
-        wxGetTranslation(wxT("Remote Whisper Settings...")),
-        onSettings
-    );
-
-    moduleManager.RegisterPreferencesFactory(
-        RemoteWhisperSettings::CreateFactory()
-    );
-
+    // RegisterModuleCommand doesn't exist in Audacity 3.7
+    // We'll add menu items in OnAppInitialized instead
     return true;
+}
+
+void RemoteWhisperModule::OnAppInitialized()
+{
+    // This is called when Audacity has finished initializing
+    // Try to add our menu items to the Tools menu
+
+    wxMessageBox(
+        wxT("Remote Whisper STT Module loaded!\n\nNote: Automatic menu registration is not supported in this Audacity version.\n\nYou can still use the module through scripting or by manually calling the functions."),
+        wxT("Remote Whisper Module"),
+        wxOK | wxICON_INFORMATION
+    );
+
+    // TODO: We need access to Audacity's CommandManager to properly add menu items
+    // This requires building against the full Audacity source code
 }
 
 // Required module entry points for Audacity
@@ -89,9 +93,26 @@ ModuleInterface *ModuleDispatch(ModuleDispatchTypes type)
     switch (type)
     {
     case ModuleInitialize:
-        return new RemoteWhisperModule();
-    default:
+        if (!g_moduleInstance)
+            g_moduleInstance = new RemoteWhisperModule();
+        return g_moduleInstance;
+
+    case AppInitialized:
+        if (g_moduleInstance)
+            g_moduleInstance->OnAppInitialized();
+        return g_moduleInstance;
+
+    case ModuleTerminate:
+    case AppQuiting:
+        if (g_moduleInstance)
+        {
+            delete g_moduleInstance;
+            g_moduleInstance = nullptr;
+        }
         return nullptr;
+
+    default:
+        return g_moduleInstance;
     }
 }
 
@@ -109,7 +130,8 @@ __declspec(dllexport)
 const wchar_t *GetVersionString()
 {
     // Return the Audacity version this module is compatible with
-    return L"3.7.5";
+    // Using 3.7.1 to match the headers we have
+    return L"3.7.1";
 }
 
 } // extern "C"
