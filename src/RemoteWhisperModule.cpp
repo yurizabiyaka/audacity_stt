@@ -50,8 +50,10 @@ bool RemoteWhisperModule::RegisterModule(ModuleManagerInterface &moduleManager)
         command.Run(project);
     };
 
+    const wxString menuPath = wxT("Tools/Remote Whisper");
+
     moduleManager.RegisterModuleCommand(
-        wxT("Tools"),
+        menuPath,
         wxT("remote-whisper-transcription"),
         wxGetTranslation(wxT("Remote Whisper Transcription...")),
         onCommand
@@ -63,7 +65,7 @@ bool RemoteWhisperModule::RegisterModule(ModuleManagerInterface &moduleManager)
     };
 
     moduleManager.RegisterModuleCommand(
-        wxT("Tools"),
+        menuPath,
         wxT("remote-whisper-settings"),
         wxGetTranslation(wxT("Remote Whisper Settings...")),
         onSettings
