@@ -51,3 +51,23 @@ install(TARGETS mod-remote-whisper
     LIBRARY DESTINATION "share/audacity/modules"
     RUNTIME DESTINATION "share/audacity/modules"
 )
+
+# ====================================================================
+# Standalone Helper Executable (for Nyquist plugin)
+# ====================================================================
+
+# Create the standalone helper executable (no wxWidgets dependency)
+add_executable(whisper-helper
+    src/whisper-helper.cpp
+)
+
+# Link only CURL for the helper
+target_link_libraries(whisper-helper
+    PRIVATE
+        CURL::libcurl
+)
+
+# Install helper executable to plugins folder
+install(TARGETS whisper-helper
+    RUNTIME DESTINATION "share/audacity/plug-ins"
+)
