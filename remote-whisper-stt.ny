@@ -91,44 +91,38 @@
   (let (tab1 tab2 start-str end-str start end text clean-line)
     ;; First, trim the line to remove any \r\n or whitespace at the end
     (setq clean-line (trim-string line))
-    (format t "  Raw line (length ~a): ~s~%" (length line) line)
-    (format t "  Cleaned line (length ~a): ~s~%" (length clean-line) clean-line)
-
-    ;; Debug: show character codes
-    (format t "  First 20 chars as codes: ")
-    (dotimes (i (min 20 (length clean-line)))
-      (format t "~a " (char-code (char clean-line i))))
-    (format t "~%")
+    (format t "  Raw line length: ~a~%" (length line))
+    (format t "  Cleaned line length: ~a~%" (length clean-line))
 
     ;; Find first tab
     (setq tab1 (find-tab clean-line))
-    (format t "  First tab at position: ~a~%" tab1)
+    (format t "  First tab position: ~a~%" tab1)
 
     (when tab1
       ;; Extract start time
       (setq start-str (subseq clean-line 0 tab1))
-      (format t "  Start string: ~s~%" start-str)
+      (format t "  Start string extracted~%")
       (setq start (read-from-string start-str))
       (format t "  Start time: ~a~%" start)
 
       ;; Find second tab
       (setq tab2 (find-tab clean-line (1+ tab1)))
-      (format t "  Second tab at position: ~a~%" tab2)
+      (format t "  Second tab position: ~a~%" tab2)
 
       (when tab2
         ;; Extract end time
         (setq end-str (subseq clean-line (1+ tab1) tab2))
-        (format t "  End string: ~s~%" end-str)
+        (format t "  End string extracted~%")
         (setq end (read-from-string end-str))
         (format t "  End time: ~a~%" end)
 
         ;; Extract and trim text
         (setq text (subseq clean-line (1+ tab2)))
         (setq text (trim-string text))
-        (format t "  Text: ~s~%" text)
+        (format t "  Text extracted~%")
 
         (when (and start end text (> (length text) 0))
-          (format t "  Successfully created label: (~a ~a ~s)~%" start end text)
+          (format t "  Label created successfully~%")
           (list start end text))))))
 
 ;; Read labels from a file
@@ -143,13 +137,16 @@
         (progn
           (format t "File opened successfully, reading lines...~%")
           (format t "=== Beginning line-by-line parsing ===~%")
+          (format t "DEBUG: About to enter do loop~%")
           (do ((line (read-line in-file nil) (read-line in-file nil)))
               ((null line))
+            (format t "DEBUG: Entered loop, line-count is ~a~%" line-count)
             (setq line-count (1+ line-count))
-            (format t "~%--- Processing line ~a ---~%" line-count)
+            (format t "DEBUG: After increment, line-count is ~a~%" line-count)
+            (format t "DEBUG: Line length is ~a~%" (length line))
             (when (> (length line) 0)
+              (format t "DEBUG: Line is non-empty, parsing...~%")
               (let ((label nil))
-                (format t "Calling parse-label-line...~%")
                 (setq label (parse-label-line line))
                 (if label
                     (progn
@@ -158,6 +155,7 @@
                     (progn
                       (format t "  ERROR: parse-label-line returned NIL~%")
                       (setq parse-errors (1+ parse-errors)))))))
+          (format t "DEBUG: Exited loop~%")
           (close in-file)
           (format t "~%=== File parsing complete ===~%")
           (format t "Total lines read: ~a~%" line-count)
