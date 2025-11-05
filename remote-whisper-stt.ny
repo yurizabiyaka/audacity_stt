@@ -48,18 +48,18 @@
 
 ;; Parse label line from helper output (format: start\tend\ttext)
 (defun parse-label-line (line)
-  (let ((tab1 (string-search "\t" line))
-        (tab2 nil)
-        (start nil)
-        (end nil)
-        (text nil))
+  (let (tab1 tab2 start-str end-str start end text)
+    (setq tab1 (string-search "\t" line))
     (when tab1
-      (setq start (read-from-string (subseq line 0 tab1)))
+      (setq start-str (subseq line 0 tab1))
+      (setq start (read-from-string start-str))
       (setq tab2 (string-search "\t" line :start (1+ tab1)))
       (when tab2
-        (setq end (read-from-string (subseq line (1+ tab1) tab2)))
+        (setq end-str (subseq line (1+ tab1) tab2))
+        (setq end (read-from-string end-str))
         (setq text (subseq line (1+ tab2)))
-        (list start end text)))))
+        (when (and start end text)
+          (cons start (cons end (cons text nil))))))))
 
 ;; Read labels from a file
 (defun read-labels-from-file (filepath)
@@ -74,12 +74,15 @@
           (do ((line (read-line in-file nil) (read-line in-file nil)))
               ((null line))
             (setq line-count (1+ line-count))
-            (format t "Line ~a: ~a~%" line-count line)
+            (format t "Line ~a (length ~a)~%" line-count (length line))
             (when (> (length line) 0)
-              (let ((label (parse-label-line line)))
-                (when label
-                  (format t "  Parsed label: ~a~%" label)
-                  (push label labels)))))
+              (let ((label nil))
+                (setq label (parse-label-line line))
+                (if label
+                    (progn
+                      (format t "  Parsed label successfully~%")
+                      (push label labels))
+                    (format t "  WARNING: Could not parse line~%")))))
           (close in-file)
           (format t "File closed. Total lines read: ~a, Labels parsed: ~a~%" line-count (length labels))
           (reverse labels))
@@ -114,12 +117,12 @@
 
     (format t "Executing: ~a~%" command)
 
-    ;; Execute the helper - system returns T on success, NIL on failure
+    ;; Execute the helper - system returns T for success in Nyquist
     (setq exit-code (system command))
     (format t "Helper returned: ~a (type: ~a)~%" exit-code (type-of exit-code))
 
-    ;; Check if helper succeeded (T means success in Nyquist)
-    (if exit-code
+    ;; Check if helper succeeded (T for success, or 0 for some Nyquist versions)
+    (if (or (equal exit-code t) (equal exit-code 0))
         (progn
           (format t "Helper succeeded, reading labels from file...~%")
           (format t "Checking if output file exists...~%")
