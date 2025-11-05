@@ -142,8 +142,8 @@
           (format t "=== Beginning line-by-line parsing ===~%")
           (format t "DEBUG: About to start reading lines~%")
 
-          ;; Read lines using a loop
-          (setq line (read-line in-file))
+          ;; Read lines using a loop - pass nil to read-line to return nil at EOF instead of error
+          (setq line (read-line in-file nil))
           (while line
             (format t "DEBUG: Read line, line-count is ~a~%" line-count)
             (setq line-count (1+ line-count))
@@ -162,9 +162,9 @@
                       (format t "  ERROR: parse-label-line returned NIL~%")
                       (setq parse-errors (1+ parse-errors))))))
 
-            ;; Read next line
+            ;; Read next line - pass nil to return nil at EOF instead of error
             (format t "DEBUG: About to read next line~%")
-            (setq line (read-line in-file)))
+            (setq line (read-line in-file nil)))
 
           (format t "DEBUG: Finished reading all lines~%")
           (close in-file)
