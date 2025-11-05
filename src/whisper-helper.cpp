@@ -84,90 +84,106 @@ std::string parseString(const std::string &str, size_t &pos)
 }
 
 // Parse words from JSON response
+// Handles multiple segments - searches for ALL "words" arrays in the response
 std::vector<Word> parseWords(const std::string &json)
 {
-    std::vector<Word> words;
+    std::vector<Word> allWords;
+    size_t searchPos = 0;
 
-    // Find "words" array
-    size_t pos = json.find("\"words\"");
-    if (pos == std::string::npos)
-        return words;
-
-    // Find the opening bracket of the array
-    pos = json.find('[', pos);
-    if (pos == std::string::npos)
-        return words;
-
-    pos++; // Move past '['
-
-    // Parse each word object
-    while (pos < json.size())
+    // Keep searching for "words" arrays throughout the entire JSON
+    while (true)
     {
-        // Skip whitespace
-        while (pos < json.size() && std::isspace(json[pos])) pos++;
+        // Find next "words" array
+        size_t pos = json.find("\"words\"", searchPos);
+        if (pos == std::string::npos)
+            break; // No more "words" arrays found
 
-        // Check bounds after whitespace skip
-        if (pos >= json.size()) break;
+        // Find the opening bracket of this array
+        pos = json.find('[', pos);
+        if (pos == std::string::npos)
+            break;
 
-        if (json[pos] == ']') break; // End of array
-        if (json[pos] != '{') { pos++; continue; } // Not an object
+        pos++; // Move past '['
 
-        Word word;
-        word.start = 0.0;
-        word.end = 0.0;
+        // Remember where this array started for next search
+        searchPos = pos;
 
-        // Parse the object
-        pos++; // Skip '{'
-        while (pos < json.size() && json[pos] != '}')
+        // Parse each word object in this array
+        while (pos < json.size())
         {
-            // Find the key
-            size_t keyStart = json.find('"', pos);
-            if (keyStart == std::string::npos) break;
-            size_t keyEnd = json.find('"', keyStart + 1);
-            if (keyEnd == std::string::npos) break;
+            // Skip whitespace
+            while (pos < json.size() && std::isspace(json[pos])) pos++;
 
-            std::string key = json.substr(keyStart + 1, keyEnd - keyStart - 1);
-            pos = keyEnd + 1;
+            // Check bounds after whitespace skip
+            if (pos >= json.size()) break;
 
-            // Find the colon
-            while (pos < json.size() && json[pos] != ':') pos++;
-            pos++; // Skip ':'
-
-            // Parse the value based on the key
-            if (key == "start")
+            if (json[pos] == ']')
             {
-                word.start = parseNumber(json, pos);
-            }
-            else if (key == "end")
-            {
-                word.end = parseNumber(json, pos);
-            }
-            else if (key == "text")
-            {
-                word.text = parseString(json, pos);
-            }
-            else
-            {
-                // Skip unknown value
-                while (pos < json.size() && json[pos] != ',' && json[pos] != '}') pos++;
+                // End of this words array - continue searching for more
+                searchPos = pos + 1;
+                break;
             }
 
-            // Skip to next field or end of object
+            if (json[pos] != '{') { pos++; continue; } // Not an object
+
+            Word word;
+            word.start = 0.0;
+            word.end = 0.0;
+
+            // Parse the object
+            pos++; // Skip '{'
+            while (pos < json.size() && json[pos] != '}')
+            {
+                // Find the key
+                size_t keyStart = json.find('"', pos);
+                if (keyStart == std::string::npos) break;
+                size_t keyEnd = json.find('"', keyStart + 1);
+                if (keyEnd == std::string::npos) break;
+
+                std::string key = json.substr(keyStart + 1, keyEnd - keyStart - 1);
+                pos = keyEnd + 1;
+
+                // Find the colon
+                while (pos < json.size() && json[pos] != ':') pos++;
+                if (pos >= json.size()) break;
+                pos++; // Skip ':'
+
+                // Parse the value based on the key
+                if (key == "start")
+                {
+                    word.start = parseNumber(json, pos);
+                }
+                else if (key == "end")
+                {
+                    word.end = parseNumber(json, pos);
+                }
+                else if (key == "text")
+                {
+                    word.text = parseString(json, pos);
+                }
+                else
+                {
+                    // Skip unknown value
+                    while (pos < json.size() && json[pos] != ',' && json[pos] != '}') pos++;
+                }
+
+                // Skip to next field or end of object
+                while (pos < json.size() && (std::isspace(json[pos]) || json[pos] == ',')) pos++;
+            }
+
+            if (!word.text.empty())
+                allWords.push_back(word);
+
+            // Skip past '}'
+            while (pos < json.size() && json[pos] != '}') pos++;
+            if (pos < json.size()) pos++;
+
+            // Skip comma
             while (pos < json.size() && (std::isspace(json[pos]) || json[pos] == ',')) pos++;
         }
-
-        if (!word.text.empty())
-            words.push_back(word);
-
-        // Skip past '}'
-        while (pos < json.size() && json[pos] != '}') pos++;
-        pos++;
-
-        // Skip comma
-        while (pos < json.size() && (std::isspace(json[pos]) || json[pos] == ',')) pos++;
     }
 
-    return words;
+    return allWords;
 }
 
 // Extract filename from path
