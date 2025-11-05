@@ -48,12 +48,11 @@
 
 ;; Parse label line from helper output (format: start\tend\ttext)
 (defun trim-trailing-whitespace (str)
-  (let ((end (1- (length str))))
+  (let ((end (1- (length str)))
+        (trim-codes '(32 9 10 13))) ; space, tab, newline, carriage return
     (do ()
         ((or (< end 0)
-             (not (or (char= (char str end) #\Space)
-                      (char= (char str end) #\Tab)
-                      (char= (char str end) #\Return)))))
+             (not (member (char-code (char str end)) trim-codes))))
       (setq end (1- end)))
     (subseq str 0 (1+ end))))
 
