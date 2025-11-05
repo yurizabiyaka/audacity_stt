@@ -6,7 +6,7 @@
 ;author "Audacity Remote Whisper STT"
 ;release 1.0.0
 ;copyright "MIT License"
-;info "Sends audio to a remote Whisper STT service and creates word-level labels.\n\nRequires whisper-helper.exe to be in the same folder as this plugin."
+;info "Sends audio to a remote Whisper STT service and creates word-level labels.\n\nRequires whisper-helper.exe - configure the full path in the Helper Executable Path field."
 
 ;; Remote Whisper Speech-to-Text Plugin for Audacity
 ;;
@@ -15,21 +15,11 @@
 ;; 2. Calls whisper-helper.exe to send it to a Whisper STT service
 ;; 3. Parses the response and creates label tracks with word timings
 ;;
-;; The helper executable must be in the same directory as this .ny file
+;; Configure the full path to whisper-helper.exe in the plugin settings
 
 ;control server-url "Server URL" string "http://localhost:8080/v1/files" "http://ai1:443/v1/files"
 ;control language "Language Code" string "en" "en"
-
-;; Helper function to get the plugin directory
-(defun get-plugin-dir ()
-  (let ((plugin-path *file-name*))
-    (if plugin-path
-        (let ((last-slash (max (or (string-search "/" plugin-path :from-end t) -1)
-                               (or (string-search "\\" plugin-path :from-end t) -1))))
-          (if (> last-slash 0)
-              (subseq plugin-path 0 (1+ last-slash))
-              ""))
-        "")))
+;control helper-path "Helper Executable Path" string "C:\\Program Files\\Audacity\\Plug-Ins\\whisper-helper.exe" "C:\\Program Files\\Audacity\\Plug-Ins\\whisper-helper.exe"
 
 ;; Get temp directory
 (defun get-temp-dir ()
@@ -104,27 +94,22 @@
 (defun process-audio ()
   (let ((temp-wav (get-temp-wav))
         (temp-labels (get-temp-labels))
-        (plugin-dir (get-plugin-dir))
-        (helper-exe "whisper-helper.exe")
         (command nil)
         (exit-code nil)
         (labels nil))
 
-    ;; Build path to helper executable
-    (setq helper-exe (strcat plugin-dir helper-exe))
-
     ;; Log what we're doing
-    (format t "Helper executable: ~a~%" helper-exe)
+    (format t "Helper executable: ~a~%" helper-path)
     (format t "Temporary audio file: ~a~%" temp-wav)
     (format t "Temporary labels file: ~a~%" temp-labels)
 
     ;; Export audio to temporary WAV file
     (format t "Exporting audio...~%")
-    (s-save *track* ny:all temp-wav :format 'wav)
+    (s-save *track* ny:all temp-wav)
 
     ;; Build the command with output file parameter
     (setq command (format nil "~a ~a ~a ~a ~a"
-                          (quote-path helper-exe)
+                          (quote-path helper-path)
                           (quote-path temp-wav)
                           (quote-path server-url)
                           (quote-path language)
@@ -147,7 +132,7 @@
                 (format t "Successfully read ~a labels~%" (length labels))
                 (format t "Label data: ~a~%" labels))
               (format t "WARNING: No labels found in output file~%")))
-        (format t "ERROR: Helper failed with exit code ~a~%" exit-code))
+        (format t "ERROR: Helper failed (system returned NIL)~%"))
 
     ;; Clean up temporary files (but only if they exist)
     (format t "Cleaning up temporary files...~%")
