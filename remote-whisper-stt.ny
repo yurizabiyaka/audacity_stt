@@ -102,7 +102,8 @@
       ;; Extract start time
       (setq start-str (subseq clean-line 0 tab1))
       (format t "  Start string extracted~%")
-      (setq start (read-from-string start-str))
+      ;; Use read with make-string-input-stream instead of read-from-string
+      (setq start (read (make-string-input-stream start-str)))
       (format t "  Start time: ~a~%" start)
 
       ;; Find second tab
@@ -113,7 +114,8 @@
         ;; Extract end time
         (setq end-str (subseq clean-line (1+ tab1) tab2))
         (format t "  End string extracted~%")
-        (setq end (read-from-string end-str))
+        ;; Use read with make-string-input-stream instead of read-from-string
+        (setq end (read (make-string-input-stream end-str)))
         (format t "  End time: ~a~%" end)
 
         ;; Extract and trim text
