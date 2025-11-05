@@ -130,20 +130,24 @@
   (let ((labels nil)
         (in-file nil)
         (line-count 0)
-        (parse-errors 0))
+        (parse-errors 0)
+        (line nil))
     (format t "Attempting to open file: ~a~%" filepath)
-    (setq in-file (open filepath :direction :input :if-does-not-exist nil))
+    (setq in-file (open filepath :direction :input))
     (if in-file
         (progn
           (format t "File opened successfully, reading lines...~%")
           (format t "=== Beginning line-by-line parsing ===~%")
-          (format t "DEBUG: About to enter do loop~%")
-          (do ((line (read-line in-file nil) (read-line in-file nil)))
-              ((null line))
-            (format t "DEBUG: Entered loop, line-count is ~a~%" line-count)
+          (format t "DEBUG: About to start reading lines~%")
+
+          ;; Read lines using a loop
+          (setq line (read-line in-file))
+          (while line
+            (format t "DEBUG: Read line, line-count is ~a~%" line-count)
             (setq line-count (1+ line-count))
             (format t "DEBUG: After increment, line-count is ~a~%" line-count)
             (format t "DEBUG: Line length is ~a~%" (length line))
+
             (when (> (length line) 0)
               (format t "DEBUG: Line is non-empty, parsing...~%")
               (let ((label nil))
@@ -154,8 +158,13 @@
                       (push label labels))
                     (progn
                       (format t "  ERROR: parse-label-line returned NIL~%")
-                      (setq parse-errors (1+ parse-errors)))))))
-          (format t "DEBUG: Exited loop~%")
+                      (setq parse-errors (1+ parse-errors))))))
+
+            ;; Read next line
+            (format t "DEBUG: About to read next line~%")
+            (setq line (read-line in-file)))
+
+          (format t "DEBUG: Finished reading all lines~%")
           (close in-file)
           (format t "~%=== File parsing complete ===~%")
           (format t "Total lines read: ~a~%" line-count)
