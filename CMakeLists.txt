@@ -1,53 +1,30 @@
 cmake_minimum_required(VERSION 3.15)
 project(audacity_remote_whisper LANGUAGES CXX)
 
-cmake_policy(SET CMP0091 NEW)
-set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find required packages (vcpkg will provide imported targets)
-find_package(wxWidgets REQUIRED COMPONENTS core base net)
+# Find required packages
 find_package(CURL REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
-# Create the module library
-add_library(mod-remote-whisper MODULE
-    src/RemoteWhisperModule.cpp
-    src/RemoteWhisperCommand.cpp
-    src/RemoteWhisperClient.cpp
-    src/RemoteWhisperJson.cpp
-    src/RemoteWhisperSettings.cpp
-)
+# ====================================================================
+# Whisper Helper Executable (for Nyquist plugin)
+# ====================================================================
 
-# Set include directories
-target_include_directories(mod-remote-whisper
-    PRIVATE
-        include
-        ${wxWidgets_INCLUDE_DIRS}
+# Create the standalone helper executable
+add_executable(whisper-helper
+    src/whisper-helper.cpp
 )
 
 # Link libraries
-target_link_libraries(mod-remote-whisper
+target_link_libraries(whisper-helper
     PRIVATE
-        ${wxWidgets_LIBRARIES}
         CURL::libcurl
-)
-
-# Add wxWidgets definitions and flags
-target_compile_definitions(mod-remote-whisper 
-    PRIVATE 
-        ${wxWidgets_DEFINITIONS}
-        WXINTL_NO_GETTEXT_MACRO
-)
-
-target_compile_options(mod-remote-whisper
-    PRIVATE
-        ${wxWidgets_CXX_FLAGS}
+        nlohmann_json::nlohmann_json
 )
 
 # Installation rules
-install(TARGETS mod-remote-whisper
-    LIBRARY DESTINATION "share/audacity/modules"
-    RUNTIME DESTINATION "share/audacity/modules"
+install(TARGETS whisper-helper
+    RUNTIME DESTINATION "share/audacity/plug-ins"
 )
