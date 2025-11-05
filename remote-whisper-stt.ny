@@ -10,6 +10,10 @@
 
 ;; Remote Whisper Speech-to-Text Plugin for Audacity
 ;;
+;; NOTE: Modern Audacity builds sandbox Nyquist and block calls to external
+;; executables. If the helper cannot be launched, use the
+;; scripts/remote_whisper_modpipe.py helper included with this repository.
+;;
 ;; This plugin:
 ;; 1. Exports the current selection to a temporary WAV file
 ;; 2. Calls whisper-helper.exe to send it to a Whisper STT service
@@ -219,7 +223,9 @@
                 (format t "Successfully read ~a labels~%" (length labels))
                 (format t "Label data: ~a~%" labels))
               (format t "WARNING: No labels found in output file~%")))
-        (format t "ERROR: Helper failed (system returned NIL)~%"))
+        (progn
+          (format t "ERROR: Helper failed (system returned NIL)~%")
+          (format t "TIP: Enable mod-script-pipe and run scripts/remote_whisper_modpipe.py~%")))
 
     ;; Clean up temporary files (but only if they exist)
     (format t "Cleaning up temporary files...~%")

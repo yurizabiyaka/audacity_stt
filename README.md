@@ -1,6 +1,6 @@
 # Remote Whisper Speech-to-Text for Audacity
 
-This repository provides an Audacity plugin that sends audio to an external Whisper-compatible speech-to-text (STT) service and creates a label track with word-level timing.
+This repository provides an Audacity plugin that sends audio to an external Whisper-compatible speech-to-text (STT) service and creates a label track with word-level timing.  Because Nyquist scripts are sandboxed and cannot launch external programs directly, the repository also includes a **mod-script-pipe** helper that drives Audacity from the outside to accomplish the same workflow.
 
 ## ⭐ Recommended: Nyquist Plugin (Easy Installation)
 
@@ -36,6 +36,37 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
    **Both files must be in the same folder!**
 
 4. **Restart Audacity**
+
+### Alternative: mod-script-pipe Helper (recommended when Nyquist sandbox is enforced)
+
+Audacity's Nyquist runtime does not allow launching external executables in recent releases. To work around this limitation you can enable the built-in **mod-script-pipe** module and let a Python script orchestrate the helper.
+
+1. In Audacity open **Edit → Preferences → Modules**, set **mod-script-pipe** to *Enabled*, and restart Audacity.
+2. Build the `whisper-helper` binary as described above (or download a prebuilt version).
+3. With Audacity running and your project/selection prepared, execute:
+
+   ```bash
+   python scripts/remote_whisper_modpipe.py http://localhost:8080/v1/files en
+   ```
+
+   Replace the server URL and language code as needed. The script automatically exports the current selection, runs the helper, and re-imports the generated labels.
+
+#### Command-line options
+
+```
+usage: remote_whisper_modpipe.py [-h] [--helper HELPER] [--helper-arg HELPER_ARG]
+                                 [--keep-temp] [--pipe-timeout PIPE_TIMEOUT]
+                                 server_url language [labels_output]
+```
+
+Key options:
+
+- `--helper`: Path to `whisper-helper` (defaults to common build output folders).
+- `--helper-arg`: Additional arguments passed to the helper, repeatable.
+- `--keep-temp`: Preserve the temporary export folder for inspection.
+- `labels_output`: Optional destination to store the tab-separated labels created by the helper.
+
+If the script reports that the pipes are unavailable, double-check that `mod-script-pipe` is enabled and that Audacity is running.
 
 ### Usage
 
