@@ -47,23 +47,42 @@
   (strcat "\"" path "\""))
 
 ;; Parse label line from helper output (format: start\tend\ttext)
+(defun trim-trailing-whitespace (str)
+  (let ((end (1- (length str))))
+    (do ()
+        ((or (< end 0)
+             (not (or (char= (char str end) #\Space)
+                      (char= (char str end) #\Tab)
+                      (char= (char str end) #\Return)))))
+      (setq end (1- end)))
+    (subseq str 0 (1+ end))))
+
 (defun parse-label-line (line)
-  (let (tab1 tab2 tab2-relative start-str end-str start end text remainder)
-    (setq tab1 (string-search "\t" line))
+  (let ((clean-line (trim-trailing-whitespace line))
+        (tab1 nil)
+        (tab2 nil)
+        (tab2-relative nil)
+        (start-str nil)
+        (end-str nil)
+        (start nil)
+        (end nil)
+        (text nil)
+        (remainder nil))
+    (setq tab1 (string-search "\t" clean-line))
     (when tab1
-      (setq start-str (subseq line 0 tab1))
+      (setq start-str (subseq clean-line 0 tab1))
       (setq start (read-from-string start-str))
       ;; Search for second tab in the remainder of the string
-      (setq remainder (subseq line (1+ tab1)))
+      (setq remainder (subseq clean-line (1+ tab1)))
       (setq tab2-relative (string-search "\t" remainder))
       (when tab2-relative
         ;; Calculate absolute position of second tab
         (setq tab2 (+ (1+ tab1) tab2-relative))
-        (setq end-str (subseq line (1+ tab1) tab2))
+        (setq end-str (subseq clean-line (1+ tab1) tab2))
         (setq end (read-from-string end-str))
-        (setq text (subseq line (1+ tab2)))
+        (setq text (subseq clean-line (1+ tab2)))
         (when (and start end text)
-          (cons start (cons end (cons text nil))))))))
+          (list start end text))))))
 
 ;; Read labels from a file
 (defun read-labels-from-file (filepath)
@@ -140,8 +159,10 @@
 
     ;; Clean up temporary files (but only if they exist)
     (format t "Cleaning up temporary files...~%")
-    (system (strcat "del " (quote-path temp-wav)))
-    (system (strcat "del " (quote-path temp-labels)))
+    (when (probe-file temp-wav)
+      (delete-file temp-wav))
+    (when (probe-file temp-labels)
+      (delete-file temp-labels))
 
     ;; Return the labels
     (format t "Returning ~a labels from process-audio~%" (if labels (length labels) 0))
@@ -170,7 +191,9 @@
         (format t "First label example: ~a~%" (car labels-list))
         (format t "Returning labels to Audacity...~%")
         ;; Return the labels in Audacity format
-        labels-list)
+        ;; Audacity expects a list of label tracks. Wrap labels in another list
+        ;; so it becomes a single label track containing all parsed entries.
+        (list labels-list))
       (progn
         (format t "ERROR: No labels generated. Check if:~%")
         (format t "  1. whisper-helper.exe is in the plugin directory~%")
