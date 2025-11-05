@@ -5,7 +5,7 @@
   This is a standalone command-line tool that:
   1. Reads a WAV file
   2. Sends it to a Whisper-compatible STT service via HTTP POST
-  3. Parses the JSON response
+  3. Parses the JSON response using nlohmann/json
   4. Writes Audacity label format to an output file
 
   Usage: whisper-helper.exe <audio-file.wav> <server-url> <language> <output-file.txt>
@@ -21,9 +21,10 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <cstdlib>
-#include <cstring>
 #include <curl/curl.h>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 // Callback for CURL to write response data
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
@@ -34,156 +35,58 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
     return total;
 }
 
-// Simple JSON word parser - extracts start, end, text from JSON
+// Word structure for transcription results
 struct Word {
     double start;
     double end;
     std::string text;
 };
 
-// Parse a number from JSON
-double parseNumber(const std::string &str, size_t &pos)
+// Parse words from JSON response using nlohmann/json
+// Handles multiple segments by iterating through all "result" entries
+std::vector<Word> parseWords(const std::string &jsonStr)
 {
-    while (pos < str.size() && std::isspace(str[pos])) pos++;
-    size_t start = pos;
-    while (pos < str.size() && (std::isdigit(str[pos]) || str[pos] == '.' || str[pos] == '-' || str[pos] == 'e' || str[pos] == 'E' || str[pos] == '+'))
-        pos++;
-    return std::atof(str.substr(start, pos - start).c_str());
-}
+    std::vector<Word> words;
 
-// Parse a JSON string value
-std::string parseString(const std::string &str, size_t &pos)
-{
-    std::string result;
-    while (pos < str.size() && str[pos] != '"') pos++; // Find opening quote
-    pos++; // Skip opening quote
-
-    while (pos < str.size() && str[pos] != '"')
+    try
     {
-        if (str[pos] == '\\' && pos + 1 < str.size())
+        // Parse JSON
+        json j = json::parse(jsonStr);
+
+        // Check if "result" array exists
+        if (!j.contains("result") || !j["result"].is_array())
         {
-            pos++;
-            switch (str[pos])
-            {
-                case 'n': result += '\n'; break;
-                case 't': result += '\t'; break;
-                case 'r': result += '\r'; break;
-                case '"': result += '"'; break;
-                case '\\': result += '\\'; break;
-                default: result += str[pos]; break;
-            }
+            std::cerr << "ERROR: JSON response missing 'result' array" << std::endl;
+            return words;
         }
-        else
+
+        // Iterate through all segments in the result array
+        for (const auto& segment : j["result"])
         {
-            result += str[pos];
-        }
-        pos++;
-    }
-    pos++; // Skip closing quote
-    return result;
-}
+            // Check if this segment has a "words" array
+            if (!segment.contains("words") || !segment["words"].is_array())
+                continue;
 
-// Parse words from JSON response
-// Handles multiple segments - searches for ALL "words" arrays in the response
-std::vector<Word> parseWords(const std::string &json)
-{
-    std::vector<Word> allWords;
-    size_t searchPos = 0;
-
-    // Keep searching for "words" arrays throughout the entire JSON
-    while (true)
-    {
-        // Find next "words" array
-        size_t pos = json.find("\"words\"", searchPos);
-        if (pos == std::string::npos)
-            break; // No more "words" arrays found
-
-        // Find the opening bracket of this array
-        pos = json.find('[', pos);
-        if (pos == std::string::npos)
-            break;
-
-        pos++; // Move past '['
-
-        // Remember where this array started for next search
-        searchPos = pos;
-
-        // Parse each word object in this array
-        while (pos < json.size())
-        {
-            // Skip whitespace
-            while (pos < json.size() && std::isspace(json[pos])) pos++;
-
-            // Check bounds after whitespace skip
-            if (pos >= json.size()) break;
-
-            if (json[pos] == ']')
+            // Extract all words from this segment
+            for (const auto& wordObj : segment["words"])
             {
-                // End of this words array - continue searching for more
-                searchPos = pos + 1;
-                break;
+                Word word;
+                word.start = wordObj.value("start", 0.0);
+                word.end = wordObj.value("end", 0.0);
+                word.text = wordObj.value("text", "");
+
+                if (!word.text.empty())
+                    words.push_back(word);
             }
-
-            if (json[pos] != '{') { pos++; continue; } // Not an object
-
-            Word word;
-            word.start = 0.0;
-            word.end = 0.0;
-
-            // Parse the object
-            pos++; // Skip '{'
-            while (pos < json.size() && json[pos] != '}')
-            {
-                // Find the key
-                size_t keyStart = json.find('"', pos);
-                if (keyStart == std::string::npos) break;
-                size_t keyEnd = json.find('"', keyStart + 1);
-                if (keyEnd == std::string::npos) break;
-
-                std::string key = json.substr(keyStart + 1, keyEnd - keyStart - 1);
-                pos = keyEnd + 1;
-
-                // Find the colon
-                while (pos < json.size() && json[pos] != ':') pos++;
-                if (pos >= json.size()) break;
-                pos++; // Skip ':'
-
-                // Parse the value based on the key
-                if (key == "start")
-                {
-                    word.start = parseNumber(json, pos);
-                }
-                else if (key == "end")
-                {
-                    word.end = parseNumber(json, pos);
-                }
-                else if (key == "text")
-                {
-                    word.text = parseString(json, pos);
-                }
-                else
-                {
-                    // Skip unknown value
-                    while (pos < json.size() && json[pos] != ',' && json[pos] != '}') pos++;
-                }
-
-                // Skip to next field or end of object
-                while (pos < json.size() && (std::isspace(json[pos]) || json[pos] == ',')) pos++;
-            }
-
-            if (!word.text.empty())
-                allWords.push_back(word);
-
-            // Skip past '}'
-            while (pos < json.size() && json[pos] != '}') pos++;
-            if (pos < json.size()) pos++;
-
-            // Skip comma
-            while (pos < json.size() && (std::isspace(json[pos]) || json[pos] == ',')) pos++;
         }
     }
+    catch (const json::exception& e)
+    {
+        std::cerr << "ERROR: JSON parsing failed: " << e.what() << std::endl;
+        std::cerr << "Response: " << jsonStr << std::endl;
+    }
 
-    return allWords;
+    return words;
 }
 
 // Extract filename from path
@@ -275,7 +178,6 @@ int main(int argc, char *argv[])
     if (words.empty())
     {
         std::cerr << "ERROR: No words found in response" << std::endl;
-        std::cerr << "Response: " << response << std::endl;
         return 1;
     }
 

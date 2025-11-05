@@ -111,14 +111,15 @@ curl -X POST "http://ai1:443/v1/files?filename=sample.wav&language=en" \
 - CMake 3.15 or newer
 - C++ compiler (Visual Studio 2022 on Windows, GCC/Clang on Linux/Mac)
 - CURL library (install via vcpkg or system package manager)
+- nlohmann/json library (install via vcpkg or system package manager)
 
 ### Windows (Visual Studio 2022)
 
 Using vcpkg for dependencies:
 
 ```bat
-# Install CURL via vcpkg
-vcpkg install curl:x64-windows
+# Install dependencies via vcpkg
+vcpkg install curl:x64-windows nlohmann-json:x64-windows
 
 # Configure
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64 ^
@@ -134,9 +135,9 @@ cmake --build build --config Release
 ### Linux / macOS
 
 ```bash
-# Install CURL (if needed)
-# Ubuntu/Debian: sudo apt-get install libcurl4-openssl-dev
-# macOS: brew install curl
+# Install dependencies (if needed)
+# Ubuntu/Debian: sudo apt-get install libcurl4-openssl-dev nlohmann-json3-dev
+# macOS: brew install curl nlohmann-json
 
 # Configure and build
 cmake -S . -B build
@@ -146,14 +147,6 @@ cmake --build build
 # - build/whisper-helper
 ```
 
-## Alternative: Module DLL (Advanced)
-
-There is also a module-based approach (`mod-remote-whisper.dll`), but it currently **does not work** because Audacity 3.7 doesn't support the module API used by the AI-generated code. This would require:
-- Building against full Audacity source code
-- Implementing a complete PluginProvider interface
-- ~500+ lines of additional code
-
-**We recommend using the Nyquist plugin instead.**
 
 ## Troubleshooting
 
