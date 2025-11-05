@@ -137,6 +137,32 @@ int main(int argc, char *argv[])
     const char *serverUrl = argv[2];
     const char *language = argv[3];
     const char *outputFile = argv[4];
+    std::string outputFilePath(outputFile);
+
+    auto appendStatusMessage = [&](const std::string &message) {
+        std::ofstream statusFile(outputFilePath, std::ios::out | std::ios::app);
+        if (statusFile.is_open())
+        {
+            statusFile << "; " << message << std::endl;
+        }
+        else
+        {
+            std::cerr << "ERROR: Unable to write status message to output file: " << outputFilePath << std::endl;
+        }
+    };
+
+    // Create (or truncate) the output file immediately so the caller can detect that the helper ran.
+    {
+        std::ofstream statusFile(outputFilePath, std::ios::out | std::ios::trunc);
+        if (statusFile.is_open())
+        {
+            statusFile << "; whisper-helper invoked" << std::endl;
+        }
+        else
+        {
+            std::cerr << "ERROR: Failed to create initial output file placeholder: " << outputFilePath << std::endl;
+        }
+    }
 
     std::cerr << "LOG: Audio file: " << audioFile << std::endl;
     std::cerr << "LOG: Server URL: " << serverUrl << std::endl;
@@ -149,6 +175,7 @@ int main(int argc, char *argv[])
     if (!file.is_open())
     {
         std::cerr << "ERROR: Failed to open audio file: " << audioFile << std::endl;
+        appendStatusMessage("Failed to open audio file");
         return 1;
     }
     std::cerr << "LOG: Audio file opened successfully" << std::endl;
@@ -162,6 +189,7 @@ int main(int argc, char *argv[])
     if (!file.read(buffer.data(), fileSize))
     {
         std::cerr << "ERROR: Failed to read audio file" << std::endl;
+        appendStatusMessage("Failed to read audio file");
         return 1;
     }
     std::cerr << "LOG: Audio file read successfully" << std::endl;
@@ -173,6 +201,7 @@ int main(int argc, char *argv[])
     if (!curl)
     {
         std::cerr << "ERROR: Failed to initialize CURL" << std::endl;
+        appendStatusMessage("Failed to initialize CURL");
         curl_global_cleanup();
         return 1;
     }
@@ -212,6 +241,7 @@ int main(int argc, char *argv[])
     if (res != CURLE_OK)
     {
         std::cerr << "ERROR: HTTP request failed: " << curl_easy_strerror(res) << std::endl;
+        appendStatusMessage(std::string("HTTP request failed: ") + curl_easy_strerror(res));
         return 1;
     }
 
@@ -227,6 +257,7 @@ int main(int argc, char *argv[])
     {
         std::cerr << "ERROR: No words found in response" << std::endl;
         std::cerr << "ERROR: This means the response JSON had no 'words' in 'result' array" << std::endl;
+        appendStatusMessage("No words found in response JSON");
         return 1;
     }
 
@@ -236,6 +267,7 @@ int main(int argc, char *argv[])
     if (!outFile.is_open())
     {
         std::cerr << "ERROR: Failed to open output file for writing: " << outputFile << std::endl;
+        appendStatusMessage("Failed to open output file for writing");
         return 1;
     }
     std::cerr << "LOG: Output file opened successfully" << std::endl;
@@ -263,6 +295,7 @@ int main(int argc, char *argv[])
     {
         std::cerr << "ERROR: File write operations failed!" << std::endl;
         outFile.close();
+        appendStatusMessage("File write operations failed");
         return 1;
     }
 
@@ -273,6 +306,7 @@ int main(int argc, char *argv[])
     if (outFile.is_open())
     {
         std::cerr << "ERROR: Failed to close output file!" << std::endl;
+        appendStatusMessage("Failed to close output file");
         return 1;
     }
 

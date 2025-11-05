@@ -133,7 +133,8 @@
         (in-file nil)
         (line-count 0)
         (parse-errors 0)
-        (line nil))
+        (line nil)
+        (status-messages nil))
     (format t "Attempting to open file: ~a~%" filepath)
     (setq in-file (open filepath :direction :input))
     (if in-file
@@ -152,15 +153,23 @@
 
             (when (> (length line) 0)
               (format t "DEBUG: Line is non-empty, parsing...~%")
-              (let ((label nil))
-                (setq label (parse-label-line line))
-                (if label
+              (let* ((clean-line (trim-string line))
+                     (is-comment (and (> (length clean-line) 0)
+                                       (= (char-code (char clean-line 0)) 59))) ; ';'
+                     (label nil))
+                (if is-comment
                     (progn
-                      (format t "  SUCCESS: Label parsed~%")
-                      (push label labels))
+                      (format t "  DEBUG: Skipping comment/status line~%")
+                      (push (trim-string (subseq clean-line 1)) status-messages))
                     (progn
-                      (format t "  ERROR: parse-label-line returned NIL~%")
-                      (setq parse-errors (1+ parse-errors))))))
+                      (setq label (parse-label-line clean-line))
+                      (if label
+                          (progn
+                            (format t "  SUCCESS: Label parsed~%")
+                            (push label labels))
+                          (progn
+                            (format t "  ERROR: parse-label-line returned NIL~%")
+                            (setq parse-errors (1+ parse-errors))))))))
 
             ;; Read next line
             (format t "DEBUG: About to read next line~%")
@@ -172,6 +181,10 @@
           (format t "Total lines read: ~a~%" line-count)
           (format t "Labels successfully parsed: ~a~%" (length labels))
           (format t "Parse errors: ~a~%" parse-errors)
+          (when status-messages
+            (format t "Helper status messages:~%")
+            (dolist (msg (reverse status-messages))
+              (format t "  ~a~%" msg)))
           (reverse labels))
         (progn
           (format t "ERROR: Could not open output file: ~a~%" filepath)
