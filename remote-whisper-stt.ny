@@ -46,6 +46,14 @@
 (defun quote-path (path)
   (strcat "\"" path "\""))
 
+;; Check if a character is whitespace (space, tab, CR, LF)
+(defun is-whitespace (char)
+  (let ((code (char-code char)))
+    (or (= code 32)   ; space
+        (= code 9)    ; tab
+        (= code 13)   ; carriage return
+        (= code 10)))) ; line feed
+
 ;; Trim whitespace from both ends of a string (including \r and \n)
 (defun trim-string (str)
   (if (or (null str) (= (length str) 0))
@@ -55,28 +63,28 @@
         ;; Trim from start
         (do ((i 0 (1+ i)))
             ((or (>= i end)
-                 (not (or (char= (char str i) #\space)
-                         (char= (char str i) #\tab)
-                         (char= (char str i) #\return)
-                         (char= (char str i) #\newline))))
+                 (not (is-whitespace (char str i))))
              (setq start i)))
         ;; Trim from end
         (do ((i (1- end) (1- i)))
             ((or (< i start)
-                 (not (or (char= (char str i) #\space)
-                         (char= (char str i) #\tab)
-                         (char= (char str i) #\return)
-                         (char= (char str i) #\newline))))
+                 (not (is-whitespace (char str i))))
              (setq end (1+ i))))
         (if (>= start end)
             ""
             (subseq str start end)))))
 
-;; Find position of tab character in string
+;; Find position of tab character (code 9) in string
 (defun find-tab (str &optional (start-pos 0))
   (if (or (null str) (>= start-pos (length str)))
       nil
-      (position #\tab str :start start-pos)))
+      (do ((i start-pos (1+ i)))
+          ((or (>= i (length str))
+               (= (char-code (char str i)) 9))
+           (if (and (< i (length str))
+                    (= (char-code (char str i)) 9))
+               i
+               nil)))))
 
 ;; Parse label line from helper output (format: start\tend\ttext)
 (defun parse-label-line (line)
