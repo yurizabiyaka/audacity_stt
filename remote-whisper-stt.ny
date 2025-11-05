@@ -46,49 +46,132 @@
 (defun quote-path (path)
   (strcat "\"" path "\""))
 
+;; Check if a character is whitespace (space, tab, CR, LF)
+(defun is-whitespace (char)
+  (let ((code (char-code char)))
+    (or (= code 32)   ; space
+        (= code 9)    ; tab
+        (= code 13)   ; carriage return
+        (= code 10)))) ; line feed
+
+;; Trim whitespace from both ends of a string (including \r and \n)
+(defun trim-string (str)
+  (if (or (null str) (= (length str) 0))
+      ""
+      (let ((start 0)
+            (end (length str)))
+        ;; Trim from start
+        (do ((i 0 (1+ i)))
+            ((or (>= i end)
+                 (not (is-whitespace (char str i))))
+             (setq start i)))
+        ;; Trim from end
+        (do ((i (1- end) (1- i)))
+            ((or (< i start)
+                 (not (is-whitespace (char str i))))
+             (setq end (1+ i))))
+        (if (>= start end)
+            ""
+            (subseq str start end)))))
+
+;; Find position of tab character (code 9) in string
+(defun find-tab (str &optional (start-pos 0))
+  (if (or (null str) (>= start-pos (length str)))
+      nil
+      (do ((i start-pos (1+ i)))
+          ((or (>= i (length str))
+               (= (char-code (char str i)) 9))
+           (if (and (< i (length str))
+                    (= (char-code (char str i)) 9))
+               i
+               nil)))))
+
 ;; Parse label line from helper output (format: start\tend\ttext)
 (defun parse-label-line (line)
-  (let (tab1 tab2 tab2-relative start-str end-str start end text remainder)
-    (setq tab1 (string-search "\t" line))
+  (let (tab1 tab2 start-str end-str start end text clean-line)
+    ;; First, trim the line to remove any \r\n or whitespace at the end
+    (setq clean-line (trim-string line))
+    (format t "  Raw line length: ~a~%" (length line))
+    (format t "  Cleaned line length: ~a~%" (length clean-line))
+
+    ;; Find first tab
+    (setq tab1 (find-tab clean-line))
+    (format t "  First tab position: ~a~%" tab1)
+
     (when tab1
-      (setq start-str (subseq line 0 tab1))
-      (setq start (read-from-string start-str))
-      ;; Search for second tab in the remainder of the string
-      (setq remainder (subseq line (1+ tab1)))
-      (setq tab2-relative (string-search "\t" remainder))
-      (when tab2-relative
-        ;; Calculate absolute position of second tab
-        (setq tab2 (+ (1+ tab1) tab2-relative))
-        (setq end-str (subseq line (1+ tab1) tab2))
-        (setq end (read-from-string end-str))
-        (setq text (subseq line (1+ tab2)))
-        (when (and start end text)
-          (cons start (cons end (cons text nil))))))))
+      ;; Extract start time
+      (setq start-str (subseq clean-line 0 tab1))
+      (format t "  Start string extracted~%")
+      ;; Use read with make-string-input-stream instead of read-from-string
+      (setq start (read (make-string-input-stream start-str)))
+      (format t "  Start time: ~a~%" start)
+
+      ;; Find second tab
+      (setq tab2 (find-tab clean-line (1+ tab1)))
+      (format t "  Second tab position: ~a~%" tab2)
+
+      (when tab2
+        ;; Extract end time
+        (setq end-str (subseq clean-line (1+ tab1) tab2))
+        (format t "  End string extracted~%")
+        ;; Use read with make-string-input-stream instead of read-from-string
+        (setq end (read (make-string-input-stream end-str)))
+        (format t "  End time: ~a~%" end)
+
+        ;; Extract and trim text
+        (setq text (subseq clean-line (1+ tab2)))
+        (setq text (trim-string text))
+        (format t "  Text extracted~%")
+
+        (when (and start end text (> (length text) 0))
+          (format t "  Label created successfully~%")
+          (list start end text))))))
 
 ;; Read labels from a file
 (defun read-labels-from-file (filepath)
   (let ((labels nil)
         (in-file nil)
-        (line-count 0))
+        (line-count 0)
+        (parse-errors 0)
+        (line nil))
     (format t "Attempting to open file: ~a~%" filepath)
-    (setq in-file (open filepath :direction :input :if-does-not-exist nil))
+    (setq in-file (open filepath :direction :input))
     (if in-file
         (progn
           (format t "File opened successfully, reading lines...~%")
-          (do ((line (read-line in-file nil) (read-line in-file nil)))
-              ((null line))
+          (format t "=== Beginning line-by-line parsing ===~%")
+          (format t "DEBUG: About to start reading lines~%")
+
+          ;; Read lines using a loop
+          (setq line (read-line in-file))
+          (while line
+            (format t "DEBUG: Read line, line-count is ~a~%" line-count)
             (setq line-count (1+ line-count))
-            (format t "Line ~a (length ~a)~%" line-count (length line))
+            (format t "DEBUG: After increment, line-count is ~a~%" line-count)
+            (format t "DEBUG: Line length is ~a~%" (length line))
+
             (when (> (length line) 0)
+              (format t "DEBUG: Line is non-empty, parsing...~%")
               (let ((label nil))
                 (setq label (parse-label-line line))
                 (if label
                     (progn
-                      (format t "  Parsed label successfully~%")
+                      (format t "  SUCCESS: Label parsed~%")
                       (push label labels))
-                    (format t "  WARNING: Could not parse line~%")))))
+                    (progn
+                      (format t "  ERROR: parse-label-line returned NIL~%")
+                      (setq parse-errors (1+ parse-errors))))))
+
+            ;; Read next line
+            (format t "DEBUG: About to read next line~%")
+            (setq line (read-line in-file)))
+
+          (format t "DEBUG: Finished reading all lines~%")
           (close in-file)
-          (format t "File closed. Total lines read: ~a, Labels parsed: ~a~%" line-count (length labels))
+          (format t "~%=== File parsing complete ===~%")
+          (format t "Total lines read: ~a~%" line-count)
+          (format t "Labels successfully parsed: ~a~%" (length labels))
+          (format t "Parse errors: ~a~%" parse-errors)
           (reverse labels))
         (progn
           (format t "ERROR: Could not open output file: ~a~%" filepath)
