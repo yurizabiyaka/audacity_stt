@@ -9,9 +9,13 @@ if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     add_compile_options(/MT$<$<CONFIG:Debug>:d>)
 
-    # Force static libraries
-    set(BUILD_SHARED_LIBS OFF)
-    set(CURL_STATICLIB ON)
+    # Force static libraries - must be set BEFORE find_package
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(CURL_STATICLIB ON CACHE BOOL "" FORCE)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib" ".a")
+
+    # Prefer static libraries
+    set(CMAKE_FIND_LIBRARY_PREFIXES "lib" "")
 endif()
 
 # Find required packages
@@ -37,6 +41,15 @@ target_link_libraries(whisper-helper
 # Define CURL_STATICLIB for static linking
 if(MSVC)
     target_compile_definitions(whisper-helper PRIVATE CURL_STATICLIB)
+
+    # When linking CURL statically on Windows, we need these additional libraries
+    target_link_libraries(whisper-helper PRIVATE
+        ws2_32
+        wldap32
+        advapi32
+        crypt32
+        normaliz
+    )
 endif()
 
 # Installation rules
