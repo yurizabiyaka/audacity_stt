@@ -114,12 +114,12 @@
 
     (format t "Executing: ~a~%" command)
 
-    ;; Execute the helper - system returns exit code (integer)
+    ;; Execute the helper - system returns T on success, NIL on failure
     (setq exit-code (system command))
-    (format t "Helper exit code: ~a~%" exit-code)
+    (format t "Helper returned: ~a (type: ~a)~%" exit-code (type-of exit-code))
 
-    ;; Check if helper succeeded (exit code 0)
-    (if (= exit-code 0)
+    ;; Check if helper succeeded (T means success in Nyquist)
+    (if exit-code
         (progn
           (format t "Helper succeeded, reading labels from file...~%")
           (format t "Checking if output file exists...~%")
@@ -129,7 +129,7 @@
                 (format t "Successfully read ~a labels~%" (length labels))
                 (format t "Label data: ~a~%" labels))
               (format t "WARNING: No labels found in output file~%")))
-        (format t "ERROR: Helper failed with exit code ~a~%" exit-code))
+        (format t "ERROR: Helper failed (system returned NIL)~%"))
 
     ;; Clean up temporary files (but only if they exist)
     (format t "Cleaning up temporary files...~%")
