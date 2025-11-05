@@ -46,11 +46,11 @@
 
 ;; Generate a temporary filename
 (defun get-temp-wav ()
-  (strcat (get-temp-dir) "audacity-whisper-" (format nil "~a" (get-internal-real-time)) ".wav"))
+  (strcat (get-temp-dir) "audacity-whisper-" (format nil "~a" (gensym)) ".wav"))
 
 ;; Generate a temporary output filename
 (defun get-temp-labels ()
-  (strcat (get-temp-dir) "audacity-whisper-labels-" (format nil "~a" (get-internal-real-time)) ".txt"))
+  (strcat (get-temp-dir) "audacity-whisper-labels-" (format nil "~a" (gensym)) ".txt"))
 
 ;; Quote a path for shell command (Windows)
 (defun quote-path (path)
@@ -74,17 +74,24 @@
 ;; Read labels from a file
 (defun read-labels-from-file (filepath)
   (let ((labels nil)
-        (in-file nil))
+        (in-file nil)
+        (line-count 0))
+    (format t "Attempting to open file: ~a~%" filepath)
     (setq in-file (open filepath :direction :input :if-does-not-exist nil))
     (if in-file
         (progn
+          (format t "File opened successfully, reading lines...~%")
           (do ((line (read-line in-file nil) (read-line in-file nil)))
               ((null line))
+            (setq line-count (1+ line-count))
+            (format t "Line ~a: ~a~%" line-count line)
             (when (> (length line) 0)
               (let ((label (parse-label-line line)))
                 (when label
+                  (format t "  Parsed label: ~a~%" label)
                   (push label labels)))))
           (close in-file)
+          (format t "File closed. Total lines read: ~a, Labels parsed: ~a~%" line-count (length labels))
           (reverse labels))
         (progn
           (format t "ERROR: Could not open output file: ~a~%" filepath)
@@ -130,17 +137,22 @@
     (if (= exit-code 0)
         (progn
           (format t "Helper succeeded, reading labels from file...~%")
+          (format t "Checking if output file exists...~%")
           (setq labels (read-labels-from-file temp-labels))
           (if labels
-              (format t "Successfully read ~a labels~%" (length labels))
+              (progn
+                (format t "Successfully read ~a labels~%" (length labels))
+                (format t "Label data: ~a~%" labels))
               (format t "WARNING: No labels found in output file~%")))
         (format t "ERROR: Helper failed with exit code ~a~%" exit-code))
 
-    ;; Clean up temporary files
+    ;; Clean up temporary files (but only if they exist)
+    (format t "Cleaning up temporary files...~%")
     (system (strcat "del " (quote-path temp-wav)))
     (system (strcat "del " (quote-path temp-labels)))
 
     ;; Return the labels
+    (format t "Returning ~a labels from process-audio~%" (if labels (length labels) 0))
     labels))
 
 ;; Helper to split string by delimiter
@@ -157,9 +169,14 @@
 
 ;; Main execution
 (let ((labels-list (process-audio)))
+  (format t "=== DEBUG: Main execution ===~%")
+  (format t "Labels-list type: ~a~%" (type-of labels-list))
+  (format t "Labels-list value: ~a~%" labels-list)
   (if labels-list
       (progn
         (format t "Generated ~a labels~%" (length labels-list))
+        (format t "First label example: ~a~%" (car labels-list))
+        (format t "Returning labels to Audacity...~%")
         ;; Return the labels in Audacity format
         labels-list)
       (progn
@@ -167,4 +184,6 @@
         (format t "  1. whisper-helper.exe is in the plugin directory~%")
         (format t "  2. The server URL is correct~%")
         (format t "  3. The server is running~%")
-        nil)))
+        (format t "  4. The helper produced valid output~%")
+        ;; Return empty string to avoid error
+        "")))
