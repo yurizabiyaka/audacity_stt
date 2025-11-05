@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     add_compile_options(/MT$<$<CONFIG:Debug>:d>)
+
+    # Force static libraries
+    set(BUILD_SHARED_LIBS OFF)
+    set(CURL_STATICLIB ON)
 endif()
 
 # Find required packages
@@ -29,6 +33,11 @@ target_link_libraries(whisper-helper
         CURL::libcurl
         nlohmann_json::nlohmann_json
 )
+
+# Define CURL_STATICLIB for static linking
+if(MSVC)
+    target_compile_definitions(whisper-helper PRIVATE CURL_STATICLIB)
+endif()
 
 # Installation rules
 install(TARGETS whisper-helper
