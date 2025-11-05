@@ -48,13 +48,17 @@
 
 ;; Parse label line from helper output (format: start\tend\ttext)
 (defun parse-label-line (line)
-  (let (tab1 tab2 start-str end-str start end text)
+  (let (tab1 tab2 tab2-relative start-str end-str start end text remainder)
     (setq tab1 (string-search "\t" line))
     (when tab1
       (setq start-str (subseq line 0 tab1))
       (setq start (read-from-string start-str))
-      (setq tab2 (string-search "\t" line :start (1+ tab1)))
-      (when tab2
+      ;; Search for second tab in the remainder of the string
+      (setq remainder (subseq line (1+ tab1)))
+      (setq tab2-relative (string-search "\t" remainder))
+      (when tab2-relative
+        ;; Calculate absolute position of second tab
+        (setq tab2 (+ (1+ tab1) tab2-relative))
         (setq end-str (subseq line (1+ tab1) tab2))
         (setq end (read-from-string end-str))
         (setq text (subseq line (1+ tab2)))
