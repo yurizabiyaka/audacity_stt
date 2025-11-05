@@ -102,7 +102,7 @@
 
     ;; Export audio to temporary WAV file
     (format t "Exporting audio...~%")
-    (s-save *track* ny:all temp-wav :format 'wav)
+    (s-save *track* ny:all temp-wav)
 
     ;; Build the command with output file parameter
     (setq command (format nil "~a ~a ~a ~a ~a"
