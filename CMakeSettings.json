@@ -1,0 +1,33 @@
+{
+    "configurations": [
+        {
+            "name": "x64-Debug",
+            "generator": "Ninja",
+            "configurationType": "Debug",
+            "buildRoot": "${projectDir}\\out\\build\\${name}",
+            "installRoot": "${projectDir}\\out\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [
+                {
+                    "name": "VCPKG_ROOT",
+                    "value": "C:/Users/brono/source/repos/vcpkg",
+                    "type": "FILEPATH"
+                },
+                {
+                    "name": "CMAKE_TOOLCHAIN_FILE",
+                    "value": "${env.VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+                    "type": "FILEPATH"
+                },
+                {
+                    "name": "VCPKG_TARGET_TRIPLET",
+                    "value": "x64-windows-static",
+                    "type": "STRING"
+                }
+            ],
+            "cmakeExecutable": "C:/Program Files/CMake/bin/cmake.exe"
+        }
+    ]
+}
