@@ -50,22 +50,39 @@ std::vector<Word> parseWords(const std::string &jsonStr)
 
     try
     {
+        std::cerr << "LOG: Attempting to parse JSON..." << std::endl;
         // Parse JSON
         json j = json::parse(jsonStr);
+        std::cerr << "LOG: JSON parsed successfully" << std::endl;
 
         // Check if "result" array exists
         if (!j.contains("result") || !j["result"].is_array())
         {
             std::cerr << "ERROR: JSON response missing 'result' array" << std::endl;
+            std::cerr << "ERROR: JSON keys present: ";
+            for (auto& el : j.items())
+            {
+                std::cerr << el.key() << " ";
+            }
+            std::cerr << std::endl;
             return words;
         }
 
+        std::cerr << "LOG: Found 'result' array with " << j["result"].size() << " segments" << std::endl;
+
         // Iterate through all segments in the result array
+        int segment_idx = 0;
         for (const auto& segment : j["result"])
         {
+            segment_idx++;
             // Check if this segment has a "words" array
             if (!segment.contains("words") || !segment["words"].is_array())
+            {
+                std::cerr << "LOG: Segment " << segment_idx << " has no 'words' array, skipping" << std::endl;
                 continue;
+            }
+
+            std::cerr << "LOG: Segment " << segment_idx << " has " << segment["words"].size() << " words" << std::endl;
 
             // Extract all words from this segment
             for (const auto& wordObj : segment["words"])
@@ -79,11 +96,13 @@ std::vector<Word> parseWords(const std::string &jsonStr)
                     words.push_back(word);
             }
         }
+
+        std::cerr << "LOG: Total words extracted: " << words.size() << std::endl;
     }
     catch (const json::exception& e)
     {
         std::cerr << "ERROR: JSON parsing failed: " << e.what() << std::endl;
-        std::cerr << "Response: " << jsonStr << std::endl;
+        std::cerr << "ERROR: Response was: " << jsonStr << std::endl;
     }
 
     return words;
@@ -100,6 +119,13 @@ std::string getFilename(const std::string &path)
 
 int main(int argc, char *argv[])
 {
+    std::cerr << "=== WHISPER-HELPER STARTING ===" << std::endl;
+    std::cerr << "LOG: argc = " << argc << std::endl;
+    for (int i = 0; i < argc; i++)
+    {
+        std::cerr << "LOG: argv[" << i << "] = " << argv[i] << std::endl;
+    }
+
     if (argc < 5)
     {
         std::cerr << "Usage: " << argv[0] << " <audio-file.wav> <server-url> <language> <output-file.txt>" << std::endl;
@@ -112,23 +138,33 @@ int main(int argc, char *argv[])
     const char *language = argv[3];
     const char *outputFile = argv[4];
 
+    std::cerr << "LOG: Audio file: " << audioFile << std::endl;
+    std::cerr << "LOG: Server URL: " << serverUrl << std::endl;
+    std::cerr << "LOG: Language: " << language << std::endl;
+    std::cerr << "LOG: Output file: " << outputFile << std::endl;
+
     // Read the audio file
+    std::cerr << "LOG: Opening audio file for reading..." << std::endl;
     std::ifstream file(audioFile, std::ios::binary | std::ios::ate);
     if (!file.is_open())
     {
         std::cerr << "ERROR: Failed to open audio file: " << audioFile << std::endl;
         return 1;
     }
+    std::cerr << "LOG: Audio file opened successfully" << std::endl;
 
     std::streamsize fileSize = file.tellg();
+    std::cerr << "LOG: Audio file size: " << fileSize << " bytes" << std::endl;
     file.seekg(0, std::ios::beg);
 
     std::vector<char> buffer(fileSize);
+    std::cerr << "LOG: Reading audio file into buffer..." << std::endl;
     if (!file.read(buffer.data(), fileSize))
     {
         std::cerr << "ERROR: Failed to read audio file" << std::endl;
         return 1;
     }
+    std::cerr << "LOG: Audio file read successfully" << std::endl;
     file.close();
 
     // Initialize CURL
@@ -159,7 +195,14 @@ int main(int argc, char *argv[])
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
 
     // Perform the request
+    std::cerr << "LOG: Sending HTTP POST request to: " << url << std::endl;
+    std::cerr << "LOG: Audio file size: " << fileSize << " bytes" << std::endl;
     CURLcode res = curl_easy_perform(curl);
+
+    // Get HTTP response code
+    long http_code = 0;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    std::cerr << "LOG: HTTP response code: " << http_code << std::endl;
 
     // Clean up CURL
     curl_slist_free_all(headers);
@@ -172,32 +215,72 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    std::cerr << "LOG: Received response (length: " << response.length() << " bytes)" << std::endl;
+    std::cerr << "LOG: Response content: " << response << std::endl;
+
     // Parse the JSON response
+    std::cerr << "LOG: Parsing JSON response..." << std::endl;
     std::vector<Word> words = parseWords(response);
+    std::cerr << "LOG: Parsed " << words.size() << " words from response" << std::endl;
 
     if (words.empty())
     {
         std::cerr << "ERROR: No words found in response" << std::endl;
+        std::cerr << "ERROR: This means the response JSON had no 'words' in 'result' array" << std::endl;
         return 1;
     }
 
     // Write output to file in Audacity label format (tab-separated: start\tend\ttext)
+    std::cerr << "LOG: Opening output file: " << outputFile << std::endl;
     std::ofstream outFile(outputFile);
     if (!outFile.is_open())
     {
-        std::cerr << "ERROR: Failed to open output file: " << outputFile << std::endl;
+        std::cerr << "ERROR: Failed to open output file for writing: " << outputFile << std::endl;
         return 1;
     }
+    std::cerr << "LOG: Output file opened successfully" << std::endl;
 
+    std::cerr << "LOG: Writing " << words.size() << " labels to file..." << std::endl;
+    int written_count = 0;
     for (const auto &word : words)
     {
         outFile << word.start << "\t" << word.end << "\t" << word.text << std::endl;
+        written_count++;
+        if (written_count <= 3 || written_count > (words.size() - 3))
+        {
+            // Log first 3 and last 3 words
+            std::cerr << "LOG: Wrote label " << written_count << ": "
+                     << word.start << "\t" << word.end << "\t" << word.text << std::endl;
+        }
     }
 
+    // Explicitly flush the file buffer
+    std::cerr << "LOG: Flushing file buffer..." << std::endl;
+    outFile.flush();
+
+    // Check if write operations were successful
+    if (outFile.fail())
+    {
+        std::cerr << "ERROR: File write operations failed!" << std::endl;
+        outFile.close();
+        return 1;
+    }
+
+    std::cerr << "LOG: Closing output file..." << std::endl;
     outFile.close();
+
+    // Verify the file was closed properly
+    if (outFile.is_open())
+    {
+        std::cerr << "ERROR: Failed to close output file!" << std::endl;
+        return 1;
+    }
+
+    std::cerr << "LOG: File closed successfully" << std::endl;
 
     // Output success message to stderr (since Nyquist can't capture stdout anyway)
     std::cerr << "SUCCESS: Wrote " << words.size() << " labels to " << outputFile << std::endl;
+    std::cerr << "LOG: Returning exit code 0 (success)" << std::endl;
 
     return 0;
 }
