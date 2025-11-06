@@ -71,7 +71,6 @@
         (progn
           (format t "Sending command: ~a~%" command)
           (format out "~a~%" command)
-          (force-output out)
           (close out)
           (spin-wait 1500000)
           (format t "Opening pipe for read: ~a~%" pipein)
@@ -86,7 +85,7 @@
                       (setq line (car read-result))
                       (format t "Received response: ~a~%" line)
                       (list t line))
-                    (list nil "No response from transcription server")))))))
+                    (list nil "No response from transcription server"))))))))
 
 (defun parse-server-response (response expected-labels)
   (let ((parts (split-string response #\,))
@@ -114,7 +113,7 @@
                                         "Unknown error"))
                    (list nil error-text))
                   (t
-                   (list nil (format nil "Unknown status: ~a" status)))))))))
+                   (list nil (format nil "Unknown status: ~a" status))))))))))
 
 ;; Quote a path for shell command (Windows)
 (defun quote-path (path)

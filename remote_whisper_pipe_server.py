@@ -7,8 +7,8 @@ import pywintypes
 import win32file
 import win32pipe
 
-PIPE_REQ = r"\\\\.\\pipe\\remote-whisper.out"  # plugin -> server (server reads)
-PIPE_RES = r"\\\\.\\pipe\\remote-whisper.in"   # server -> plugin (server writes)
+PIPE_REQ = r"\\.\pipe\remote-whisper.out"  # plugin -> server (server reads)
+PIPE_RES = r"\\.\pipe\remote-whisper.in"   # server -> plugin (server writes)
 
 stop_event = threading.Event()
 

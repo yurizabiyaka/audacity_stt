@@ -22,7 +22,6 @@
         (return-from send-then-read (format nil "ERROR: cannot open for write ~a" pipeout))
         (progn
           (format out "~a~%" msg)     ; send one line
-          (force-output out)          ; flush explicitly
           (close out))))
   ;; small pause to give the server time to post ConnectNamedPipe on the reply pipe
   (spin-wait 1500000)                 ; adjust up/down if needed
