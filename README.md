@@ -1,6 +1,6 @@
 # Remote Whisper Speech-to-Text for Audacity
 
-This repository provides an Audacity plugin that sends audio to an external Whisper-compatible speech-to-text (STT) service and creates a label track with word-level timing.
+This repository provides an Audacity plugin and a companion Windows pipe server that send audio to an external Whisper-compatible speech-to-text (STT) service and create a label track with word-level timing.
 
 ## ⭐ Recommended: Nyquist Plugin (Easy Installation)
 
@@ -9,7 +9,7 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
 ### Features
 
 * ✅ **No compilation required** - works with any Audacity 3.x
-* ✅ **Easy installation** - just copy 2 files to your plugins folder
+* ✅ **Easy installation** - copy the Nyquist plugin and helper binaries
 * ✅ **Configurable** - set server URL and language in the plugin dialog
 * ✅ **Word-level timing** - creates labels for each word with precise timing
 * ✅ **Appears in Analyze menu** automatically
@@ -24,58 +24,61 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
    cmake --build build --config Release
    ```
 
-2. **Find these two files:**
-   - `remote-whisper-stt.ny` (in the project root)
+2. **Locate these files:**
+   - `remote-whisper-stt.ny` (Nyquist plugin in the project root)
+   - `remote_whisper_pipe_server.py` (Python pipe server in the project root)
    - `build/Release/whisper-helper.exe` (or `build/whisper-helper` on Linux/Mac)
 
-3. **Copy them to Audacity's plug-ins folder:**
+3. **Copy `remote-whisper-stt.ny` to Audacity's plug-ins folder:**
    - **Windows**: `C:\Users\<YourName>\AppData\Roaming\Audacity\Plug-Ins\`
    - **macOS**: `~/Library/Application Support/audacity/Plug-Ins/`
    - **Linux**: `~/.audacity-data/Plug-Ins/`
 
-   **Both files must be in the same folder!**
+4. **Keep the Python server and helper together:** place `remote_whisper_pipe_server.py` and `whisper-helper.exe` in the **same directory**. The server expects the helper executable to be next to it.
 
-4. **Restart Audacity**
+5. **Restart Audacity**
 
 ### Usage
 
-1. Select the audio you want to transcribe (or select nothing to transcribe the entire project)
-2. Go to **Analyze → Remote Whisper Transcription...**
-3. In the dialog:
+1. Launch the pipe server from the directory that contains both the Python script and `whisper-helper.exe`:
+
+   ```bat
+   py -3 remote_whisper_pipe_server.py
+   ```
+
+   Leave this window running while you use Audacity.
+
+2. Select the audio you want to transcribe (or select nothing to transcribe the entire project)
+3. Go to **Analyze → Remote Whisper Transcription...**
+4. In the dialog:
    - **Server URL**: Enter your Whisper STT server URL (e.g., `http://ai1:443/v1/files`)
    - **Language Code**: Enter the language code (e.g., `en` for English)
-4. Click **OK**
-5. Wait for processing (you'll see progress in the status bar)
-6. A new label track will be created with word-level timing!
+5. Click **OK**
+6. The plugin exports the audio, waits for the server response, and then creates a label track if the filenames match.
 
 ### How It Works
 
 ```
-┌─────────────────────┐
-│  Audacity           │
-│  (Nyquist Plugin)   │
-└──────────┬──────────┘
-           │ 1. Export selected audio to temp.wav
-           ↓
-┌─────────────────────┐
-│ whisper-helper.exe  │
-└──────────┬──────────┘
-           │ 2. HTTP POST to Whisper server
-           ↓
-┌─────────────────────┐
-│ Whisper STT Server  │
-└──────────┬──────────┘
-           │ 3. JSON response with words & timings
-           ↓
-┌─────────────────────┐
-│ whisper-helper.exe  │
-└──────────┬──────────┘
-           │ 4. Output labels (tab-separated)
-           ↓
-┌─────────────────────┐
-│  Audacity           │
-│  (Creates labels)   │
-└─────────────────────┘
+┌─────────────────────┐            ┌────────────────────────┐
+│  Audacity           │  pipes     │  remote_whisper_pipe_  │
+│  (Nyquist Plugin)   │──────────▶│  server.py              │
+└──────────┬──────────┘            └──────────┬─────────────┘
+           │ 1. Export audio                    │ 2. Run helper with
+           ↓                                    │    requested options
+┌─────────────────────┐            ┌────────────▼───────────┐
+│  Temporary WAV      │            │  whisper-helper.exe    │
+└──────────┬──────────┘            └────────────┬───────────┘
+           │ 3. HTTP POST to Whisper server     │
+           ↓                                    │ 4. Labels file
+┌─────────────────────┐            ┌────────────▼───────────┐
+│ Whisper STT Server  │            │  Labels (tsv)          │
+└──────────┬──────────┘            └────────────┬───────────┘
+           │ 5. JSON response                   │ 6. Send result back
+           ↓                                    │    via pipe
+┌─────────────────────┐            ┌────────────▼───────────┐
+│  Audacity           │◀──────────│  remote_whisper_pipe_  │
+│  (Creates labels)   │ 7. Create │  server.py              │
+└─────────────────────┘    track  └────────────────────────┘
 ```
 
 ## Expected STT API
@@ -151,12 +154,13 @@ cmake --build build
 ## Troubleshooting
 
 ### Plugin doesn't appear in Analyze menu
-- Make sure both `remote-whisper-stt.ny` and `whisper-helper.exe` are in the **same folder**
+- Make sure `remote-whisper-stt.ny` is in the **Plug-Ins** folder
 - Restart Audacity
 - Check Audacity's plug-ins folder location in **Edit → Preferences → Effects**
 
-### "Helper not found" error
-- Verify `whisper-helper.exe` is in the same directory as the `.ny` file
+### "Helper not found" or immediate pipe errors
+- Verify `remote_whisper_pipe_server.py` and `whisper-helper.exe` live in the same directory
+- Confirm the server console shows "Remote Whisper pipe server ready"
 - On Linux/Mac, make sure the helper is executable: `chmod +x whisper-helper`
 
 ### "No words found in response"
@@ -168,6 +172,7 @@ cmake --build build
 ### Labels are empty or missing
 - Ensure your STT server returns JSON in the expected format
 - Check that the `words` array contains `start`, `end`, and `text` fields
+- If the plugin never receives a response, stop the Nyquist effect and restart the pipe server
 
 ## License
 
