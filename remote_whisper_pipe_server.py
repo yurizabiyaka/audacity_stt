@@ -182,19 +182,19 @@ def main():
             if stop_event.is_set():
                 break
 
-            request = read_request(req_handle)
-            win32pipe.DisconnectNamedPipe(req_handle)
-            print(f"Received: {request}")
-
-            response = handle_command(request, helper_path)
-            print(f"Responding: {response}")
-
             res_thread = threading.Thread(
                 target=wait_connect_blocking,
                 args=(res_handle, res_evt),
                 daemon=True,
             )
             res_thread.start()
+
+            request = read_request(req_handle)
+            win32pipe.DisconnectNamedPipe(req_handle)
+            print(f"Received: {request}")
+
+            response = handle_command(request, helper_path)
+            print(f"Responding: {response}")
 
             while not res_evt.is_set():
                 if stop_event.is_set():
