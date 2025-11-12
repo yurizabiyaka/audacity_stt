@@ -66,18 +66,27 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
            │ 1. Export audio                    │ 2. Run helper with
            ↓                                    │    requested options
 ┌─────────────────────┐            ┌────────────▼───────────┐
-│  Temporary WAV      │            │  whisper-helper.exe    │
-└──────────┬──────────┘            └────────────┬───────────┘
-           │ 3. HTTP POST to Whisper server     │
-           ↓                                    │ 4. Labels file
-┌─────────────────────┐            ┌────────────▼───────────┐
-│ Whisper STT Server  │            │  Labels (tsv)          │
-└──────────┬──────────┘            └────────────┬───────────┘
-           │ 5. JSON response                   │ 6. Send result back
-           ↓                                    │    via pipe
+│  Temporary WAV      │───────────▶│  whisper-helper.exe    │
+└─────────────────────┘ 3. Read    └────────────┬───────────┘
+                          audio                  │ 4. HTTP POST
+                                                 ↓
+                                    ┌────────────────────────┐
+                                    │ Whisper STT Server     │
+                                    └────────────┬───────────┘
+                                                 │ 5. JSON response
+                                                 ↓
+                                    ┌────────────────────────┐
+                                    │  whisper-helper.exe    │
+                                    └────────────┬───────────┘
+                                                 │ 6. Labels file
+                                                 ↓
+                                    ┌────────────────────────┐
+                                    │  Labels (tsv)          │
+                                    └────────────┬───────────┘
+                                                 │ 7. Send result back
 ┌─────────────────────┐            ┌────────────▼───────────┐
 │  Audacity           │◀──────────│  remote_whisper_pipe_  │
-│  (Creates labels)   │ 7. Create │  server.py              │
+│  (Creates labels)   │ 8. Create │  server.py              │
 └─────────────────────┘    track  └────────────────────────┘
 ```
 
