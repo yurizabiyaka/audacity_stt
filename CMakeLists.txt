@@ -72,3 +72,38 @@ set_target_properties(pipeserver-mod PROPERTIES
 if(MSVC)
     target_compile_options(pipeserver-mod PRIVATE /MT$<$<CONFIG:Debug>:d>)
 endif()
+
+
+# ====================================================================
+# Pipe Server Module DLL
+# ====================================================================
+find_package(wxWidgets REQUIRED)
+
+add_library(commands-pipeserver-mod MODULE
+    src/remote-whisper-module.cpp
+)
+
+target_include_directories(commands-pipeserver-mod
+    PRIVATE
+        include
+            ${wxWidgets_INCLUDE_DIRS}
+)
+
+target_link_libraries(commands-pipeserver-mod
+    PRIVATE
+        ${wxWidgets_LIBRARIES}
+)
+
+target_compile_definitions(commands-pipeserver-mod
+    PRIVATE
+        ${wxWidgets_DEFINITIONS}
+)
+
+# Set DLL properties
+set_target_properties(commands-pipeserver-mod PROPERTIES
+    PREFIX ""
+    OUTPUT_NAME "commands-pipeserver-mod"
+)
+if(MSVC)
+    target_compile_options(commands-pipeserver-mod PRIVATE /MT$<$<CONFIG:Debug>:d>)
+endif()

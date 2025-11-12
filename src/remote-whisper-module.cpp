@@ -84,7 +84,7 @@ public:
     {
         if (m_success)
         {
-            response = "version 0,success," + m_resultsFileName;
+            response = "version 0,success " + m_resultsFileName;
         }
         else
         {
@@ -132,12 +132,16 @@ public:
         // Build command line
         std::string cmdLine = std::string("\"") + helperPath + "\"";
         cmdLine += " \"" + m_audioFilePath + "\"";
-        cmdLine += " \"" + m_resultsFileName + "\"";
         cmdLine += " \"" + m_serverUrl + "\"";
         if (!m_language.empty())
         {
             cmdLine += " \"" + m_language + "\"";
         }
+        else
+        {
+            cmdLine += "en";
+        }
+        cmdLine += " \"" + m_resultsFileName + "\"";
 
         log("Executing: " + cmdLine);
 
@@ -147,7 +151,7 @@ public:
         PROCESS_INFORMATION pi = {0};
 
         BOOL ok = CreateProcessA(NULL,
-                                 const_cast<char*>(cmdLine.c_str()),
+                                 const_cast<char *>(cmdLine.c_str()),
                                  NULL, NULL, FALSE, 0, NULL, NULL,
                                  &si, &pi);
 
@@ -210,6 +214,21 @@ public:
         std::string resultsFile = fields[1];
         std::string serverUrl = fields[2];
         std::string language = (fields.size() >= 4) ? fields[3] : "";
+
+        // Helper to strip trailing whitespace characters (including \r, \n, spaces)
+        auto trim_trailing = [](std::string &s)
+        {
+            while (!s.empty() && (s.back() == '\n' || s.back() == '\r' || s.back() == ' ' || s.back() == '\t'))
+            {
+                s.pop_back();
+            }
+        };
+
+        // Clear serverUrl and language of trailing whitespace
+        trim_trailing(audioFile);
+        trim_trailing(resultsFile);
+        trim_trailing(serverUrl);
+        trim_trailing(language);
 
         command = std::make_unique<Protocol0Command>(audioFile, resultsFile, serverUrl, language);
         return true;
@@ -302,7 +321,7 @@ std::string process_command(const std::string &msg)
     }
 
     // Extract version number
-    size_t spacePos = msg.find(' ', 8); // Find space after "version "
+    size_t spacePos = msg.find(' ', 7); // Find space after "version "
     if (spacePos == std::string::npos)
     {
         log("Error: Invalid message format, no space after version");
