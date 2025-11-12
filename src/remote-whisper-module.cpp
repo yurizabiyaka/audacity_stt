@@ -592,6 +592,9 @@ extern "C" __declspec(dllexport) ModuleInterface *ModuleDispatch(ModuleDispatchT
 
     case ModuleTerminate:
         log("ModuleDispatch: ModuleTerminate - Deleting module instance");
+        g_module->Terminate();
+        delete g_module;
+        g_module = nullptr;
         return nullptr;
 
     case AppInitialized:
