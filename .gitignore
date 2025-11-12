@@ -2,3 +2,5 @@ build/
 .vs/
 .venv/
 assets/
+.vscode/
+__pycache__/

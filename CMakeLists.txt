@@ -14,32 +14,61 @@ if(MSVC)
     set(CURL_STATICLIB ON)
 endif()
 
-# Find required packages
-find_package(CURL REQUIRED)
-find_package(nlohmann_json REQUIRED)
-
 # ====================================================================
 # Whisper Helper Executable (for Nyquist plugin)
 # ====================================================================
 
+# Find required packages
+find_package(CURL REQUIRED)
+find_package(nlohmann_json REQUIRED)
+
 # Create the standalone helper executable
 add_executable(whisper-helper
     src/whisper-helper.cpp
-)
-
-# Link libraries
-target_link_libraries(whisper-helper
-    PRIVATE
-        CURL::libcurl
-        nlohmann_json::nlohmann_json
+    )
+    
+    # Link libraries
+    target_link_libraries(whisper-helper
+        PRIVATE
+            CURL::libcurl
+            nlohmann_json::nlohmann_json
 )
 
 # Define CURL_STATICLIB for static linking
 if(MSVC)
-    target_compile_definitions(whisper-helper PRIVATE CURL_STATICLIB)
+target_compile_definitions(whisper-helper PRIVATE CURL_STATICLIB)
 endif()
 
-# Installation rules
-install(TARGETS whisper-helper
-    RUNTIME DESTINATION "share/audacity/plug-ins"
+# ====================================================================
+# POC Pipe Server Module DLL
+# ====================================================================
+find_package(wxWidgets REQUIRED)
+
+add_library(pipeserver-mod MODULE
+    POC/POC-pipeserver-mod-dll.cpp
 )
+
+target_include_directories(pipeserver-mod
+    PRIVATE
+        include
+            ${wxWidgets_INCLUDE_DIRS}
+)
+
+target_link_libraries(pipeserver-mod
+    PRIVATE
+        ${wxWidgets_LIBRARIES}
+)
+
+target_compile_definitions(pipeserver-mod
+    PRIVATE
+        ${wxWidgets_DEFINITIONS}
+)
+
+# Set DLL properties
+set_target_properties(pipeserver-mod PROPERTIES
+    PREFIX ""
+    OUTPUT_NAME "pipeserver-mod"
+)
+if(MSVC)
+    target_compile_options(pipeserver-mod PRIVATE /MT$<$<CONFIG:Debug>:d>)
+endif()
