@@ -100,9 +100,6 @@ def handle_command(command: str, helper_path: str) -> str:
     if not os.path.isabs(labels_path):
         return format_error("labels path must be absolute")
 
-    if not os.path.exists(helper_path):
-        return format_error("whisper-helper.exe not found")
-
     try:
         result = subprocess.run(
             [helper_path, audio_path, server_url, language, labels_path],
@@ -111,7 +108,7 @@ def handle_command(command: str, helper_path: str) -> str:
             check=False,
         )
     except FileNotFoundError:
-        return format_error("whisper-helper.exe missing")
+        return format_error(f"Environment variable AUDACITY_REMOTE_WHISPER_HELPER is '{helper_path}', but the executable is not found")
     except Exception as exc:  # pragma: no cover - best effort logging
         return format_error(str(exc))
 
@@ -150,8 +147,21 @@ def nudge_pipe_client(pipename: str, want_write: bool) -> None:
 
 def main():
     signal.signal(signal.SIGINT, _handle_sigint)
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    helper_path = os.path.join(base_dir, "whisper-helper.exe")
+    
+    # Load helper path from environment variable
+    helper_path = os.environ.get("AUDACITY_REMOTE_WHISPER_HELPER", "").strip()
+    
+    if not helper_path:
+        print("ERROR: Environment variable AUDACITY_REMOTE_WHISPER_HELPER is not set or empty.")
+        print("Please set it to the full path of the whisper helper executable.")
+        print("Example: export AUDACITY_REMOTE_WHISPER_HELPER=/path/to/whisper-helper.exe")
+        return
+    
+    if not os.path.exists(helper_path):
+        print(f"ERROR: Environment variable AUDACITY_REMOTE_WHISPER_HELPER is set to '{helper_path}',")
+        print("but the executable does not exist at that path.")
+        print("Please verify the path and ensure the file exists.")
+        return
 
     print("Remote Whisper pipe server ready (Ctrl+C to stop)")
     print(f"  Request pipe: {PIPE_REQ}")
