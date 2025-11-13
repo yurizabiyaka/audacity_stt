@@ -59,23 +59,23 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
 ### How It Works
 
 ```
-┌─────────────────────┐            ┌────────────────────────┐
-│  Audacity           │  pipes     │  remote_whisper_pipe_  │
-│  (Nyquist Plugin)   │──────────▶│  server.py              │
-└──────────┬──────────┘            └──────────┬─────────────┘
+┌─────────────────────┐              ┌────────────────────────┐
+│  Audacity           │  pipes       │  remote_whisper_pipe_  │
+│  (Nyquist Plugin)   │───────────▶ │  server.py             │
+└──────────┬──────────┘              └──────────┬─────────────┘
            │ 1. Export audio                    │ 2. Run helper with
            ↓                                    │    requested options
-┌─────────────────────┐            ┌────────────▼───────────┐            ┌────────────────────────┐
-│  Temporary WAV      │───────────▶│  External Utility      │◀──────────▶│ Whisper STT Server     │
+┌─────────────────────┐            ┌────────────▼───────────┐               ┌────────────────────────┐
+│  Temporary WAV      │───────────▶│  External Utility      │◀──────────▶ │ Whisper STT Server     │
 └─────────────────────┘ 3. Read    └────────────┬───────────┘ 4. Transcribe └────────────────────────┘
                           audio                  │ 5. Create labels
                                                  ↓
                                     ┌────────────────────────┐
-                                    │  Labels (tsv)          │
-                                    └────────────┬───────────┘
-                                                 │ 6. Send result
-                                                 │    back via pipe
-┌─────────────────────┐            ┌────────────▼───────────┐
+            ┌───────────────────────▶|  Labels (tsv)          │
+            │                       └────────────┬───────────┘
+            │                                    │ 6. Send result
+            │                                    │    back via pipe
+┌───────────▼─────────┐            ┌────────────▼───────────┐
 │  Audacity           │◀───────────│  remote_whisper_pipe_  │
 │  (Creates labels)   │ 7. Create  │  server.py              │
 └─────────────────────┘    track   └────────────────────────┘
