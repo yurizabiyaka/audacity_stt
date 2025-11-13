@@ -309,6 +309,32 @@ void nudge_pipe_client(const char *name, bool want_write)
 }
 
 // ============================================================================
+// Helper to format error messages
+// ============================================================================
+std::string format_error_response(const std::string &message)
+{
+    // Sanitize error message: replace commas with semicolons, remove newlines
+    std::string clean = message;
+    for (char &c : clean)
+    {
+        if (c == ',')
+            c = ';';
+        else if (c == '\r' || c == '\n')
+            c = ' ';
+    }
+    // Trim spaces
+    while (!clean.empty() && (clean.front() == ' ' || clean.front() == '\t'))
+        clean.erase(clean.begin());
+    while (!clean.empty() && (clean.back() == ' ' || clean.back() == '\t'))
+        clean.pop_back();
+    
+    if (clean.empty())
+        clean = "unknown error";
+    
+    return "version 0,error," + clean;
+}
+
+// ============================================================================
 // Command Processing
 // ============================================================================
 std::string process_command(const std::string &msg)
@@ -317,7 +343,7 @@ std::string process_command(const std::string &msg)
     if (msg.find("version ") != 0)
     {
         log("Error: Message does not start with 'version '");
-        return "";
+        return format_error_response("invalid protocol format");
     }
 
     // Extract version number
@@ -325,14 +351,14 @@ std::string process_command(const std::string &msg)
     if (spacePos == std::string::npos)
     {
         log("Error: Invalid message format, no space after version");
-        return "";
+        return format_error_response("invalid protocol format");
     }
 
     size_t commaPos = msg.find(',', spacePos);
     if (commaPos == std::string::npos)
     {
         log("Error: Invalid message format, no comma after version number");
-        return "";
+        return format_error_response("invalid protocol format");
     }
 
     std::string versionStr = msg.substr(8, commaPos - 8);
@@ -344,7 +370,7 @@ std::string process_command(const std::string &msg)
     catch (...)
     {
         log("Error: Invalid version number: " + versionStr);
-        return "";
+        return format_error_response("invalid version number");
     }
 
     // Get the protocol parser
@@ -352,7 +378,7 @@ std::string process_command(const std::string &msg)
     if (!parser)
     {
         log("Error: Unsupported protocol version: " + std::to_string(version));
-        return "";
+        return format_error_response("unsupported protocol version " + std::to_string(version));
     }
 
     // Extract the command part (everything after "version X,")
@@ -364,7 +390,7 @@ std::string process_command(const std::string &msg)
     if (!parser->DecodeCommand(commandStr, err, command))
     {
         log("Error: Failed to decode command: " + err);
-        return "";
+        return format_error_response(err);
     }
 
     // Run the command
@@ -374,7 +400,7 @@ std::string process_command(const std::string &msg)
         if (!result)
         {
             log("Error: Command failed: " + err);
-            return "";
+            return format_error_response(err);
         }
         // If result exists, it takes precedence
     }
@@ -383,7 +409,7 @@ std::string process_command(const std::string &msg)
     if (!result)
     {
         log("Error: Command did not return a result");
-        return "";
+        return format_error_response("command did not return a result");
     }
 
     std::string response;

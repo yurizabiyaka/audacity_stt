@@ -84,7 +84,10 @@
                     (progn
                       (setq line (car read-result))
                       (format t "Received response: ~a~%" line)
-                      (list t line))
+                      ;; Check if response is empty
+                      (if (or (null line) (= (length (trim-string line)) 0))
+                          (list nil "Empty response from transcription server. The server may not support the protocol version or encountered an error.")
+                          (list t line)))
                     (list nil "No response from transcription server"))))))))
 
 (defun parse-server-response (response expected-labels)
