@@ -203,7 +203,10 @@ def main():
             win32pipe.DisconnectNamedPipe(req_handle)
             print(f"Received: {request}")
 
-            response = handle_command(request, helper_path)
+            try:
+                response = handle_command(request, helper_path)
+            except Exception as exc:  # pragma: no cover - ensure loop continues
+                response = format_error(f"unexpected error: {str(exc)}")
             print(f"Responding: {response}")
 
             while not res_evt.is_set():
