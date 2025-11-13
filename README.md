@@ -71,7 +71,7 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
                           audio                  │ 5. Create labels
                                                  ↓
                                     ┌────────────────────────┐
-            ┌───────────────────────▶|  Labels (tsv)          │
+            ┌───────────────────────|  Labels (tsv)          │
             │                       └────────────┬───────────┘
             │                                    │ 6. Send result
             │                                    │    back via pipe
@@ -80,6 +80,19 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
 │  (Creates labels)   │ 7. Create  │  server.py              │
 └─────────────────────┘    track   └────────────────────────┘
 ```
+
+```mermaid
+flowchart TB
+  A["Audacity<br>Nyquist plugin"] -- pipes --> B["Pipe server<br>(DLL module or Python)"]
+  A -- exports audio --> C["Temporary WAV"]
+  B -- calls --> D["External Utility<br>AUDACITY_REMOTE_WHISPER_HELPER"] <-- transcribe --> H["Whisper Server"]
+  C -- read by --> D
+  B -- pipes --> F
+  D -- saves --> E["Label file (tsv)"]
+  E -- read by --> F["Audacity<br>Nyquist plugin"]
+
+```
+
 
 ## Expected STT API
 
