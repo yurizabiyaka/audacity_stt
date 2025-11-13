@@ -42,15 +42,23 @@ This repository provides an Audacity plugin and a companion Windows pipe server 
    
    - 4.2 **Launch the Python pipe server** (see Usage section below)
 
-4. Export `AUDACITY_REMOTE_WHISPER_HELPER` environment variable with a full path to an executable (whisper-helper.exe for Windows, a whisper helper script for Linux/MacOS)
+5. **Export the helper path environment variable** with a full path to an executable (whisper-helper.exe for Windows, a whisper helper script for Linux/MacOS):
 
-4. **For Linux/MacOS: Install pipeserver and dependencies:** place `remote_whisper_pipe_server_macos.py` into a direcory and create a virtual environment. 
+   ```bash
+   export AUDACITY_REMOTE_WHISPER_HELPER=/path/to/whisper-helper
+   ```
 
-   - 4.1 **Install Python's dependencies**:
+6. **For Linux/MacOS: Install pipeserver and dependencies:** place `remote_whisper_pipe_server_macos.py` into a directory and create a virtual environment. 
 
-      ```pip install -r requirements_macos.txt```
+   - 6.1 **Install Python's dependencies**:
 
-5. **Restart Audacity**
+      ```
+      pip install -r remote_whisper_pipe_server_macos_requirements.txt
+      ```
+      
+      Note: No external dependencies are required for the macOS/Linux version as it uses Unix domain sockets from Python's standard library.
+
+7. **Restart Audacity**
 
 ### Usage
 
