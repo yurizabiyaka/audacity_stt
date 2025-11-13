@@ -1,0 +1,2 @@
+# No external dependencies required for Linux/macOS version
+# Unix domain sockets are part of Python's standard library
