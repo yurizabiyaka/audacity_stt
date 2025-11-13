@@ -65,29 +65,22 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
 └──────────┬──────────┘            └──────────┬─────────────┘
            │ 1. Export audio                    │ 2. Run helper with
            ↓                                    │    requested options
-┌─────────────────────┐            ┌────────────▼───────────┐
-│  Temporary WAV      │───────────▶│  whisper-helper.exe    │
-└─────────────────────┘ 3. Read    └────────────┬───────────┘
-                          audio                  │ 4. HTTP POST
-                                                 ↓
-                                    ┌────────────────────────┐
-                                    │ Whisper STT Server     │
-                                    └────────────┬───────────┘
-                                                 │ 5. JSON response
-                                                 ↓
-                                    ┌────────────────────────┐
-                                    │  whisper-helper.exe    │
-                                    └────────────┬───────────┘
-                                                 │ 6. Labels file
+┌─────────────────────┐            ┌────────────▼───────────┐            ┌────────────────────────┐
+│  Temporary WAV      │───────────▶│  External Utility      │◀──────────▶│ Whisper STT Server     │
+└─────────────────────┘ 3. Read    └────────────┬───────────┘ 4. Transcribe └────────────────────────┘
+                          audio                  │ 5. Labels file
                                                  ↓
                                     ┌────────────────────────┐
                                     │  Labels (tsv)          │
                                     └────────────┬───────────┘
-                                                 │ 7. Send result back
+                                                 │ 6. Send result back
 ┌─────────────────────┐            ┌────────────▼───────────┐
-│  Audacity           │◀──────────│  remote_whisper_pipe_  │
-│  (Creates labels)   │ 8. Create │  server.py              │
-└─────────────────────┘    track  └────────────────────────┘
+│  Audacity           │◀───────────│  remote_whisper_pipe_  │
+│  (Creates labels)   │ 7. Create  │  server.py              │
+└─────────────────────┘    track   └────────────────────────┘
+           ▲                                    
+           │ 8. Read labels                     
+           └────────────────────────────────────┘
 ```
 
 ## Expected STT API
