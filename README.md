@@ -15,7 +15,7 @@ This repository provides an Audacity plugin and a companion Windows pipe server 
 
 2. **Locate these files:**
    - `remote-whisper-stt.ny` (Nyquist plugin in the project root)
-   - `remote_whisper_pipe_server.py` (Python's pipe server in the project root)
+   - `remote_whisper_pipe_server_windows.py` (Python's pipe server for Windows in the project root)
    - `build/Release/whisper-helper.exe` for Windows
    - `build/Release/pipeserver-mod.dll` for Windows
 
@@ -24,9 +24,23 @@ This repository provides an Audacity plugin and a companion Windows pipe server 
    - **macOS**: `~/Library/Application Support/audacity/Plug-Ins/`
    - **Linux**: `~/.audacity-data/Plug-Ins/`
 
-4. **For Windows, copy `pipeserver-mod.dll` into Audacity's `modules` directory.***
-    
-      Then start Audacity and switch `Enabled` against **pipeserver-mod** module in **Preferences->Modules**. Close Audacity afterwards.
+4. **For Windows, choose one of the following options:**
+
+   **Option A: Use the pipeserver-mod.dll module (recommended)**
+   
+   Copy `pipeserver-mod.dll` into Audacity's `modules` directory. Then start Audacity and switch `Enabled` against **pipeserver-mod** module in **Preferences->Modules**. Close Audacity afterwards.
+   
+   **Option B: Use the Python pipe server as an alternative**
+   
+   If you prefer not to use the DLL module, you can use the Python pipe server instead:
+   
+   - 4.1 **Install Python's dependencies**:
+   
+     ```
+     pip install -r remote_whisper_pipe_server_windows_requirements.txt
+     ```
+   
+   - 4.2 **Launch the Python pipe server** (see Usage section below)
 
 4. Export `AUDACITY_REMOTE_WHISPER_HELPER` environment variable with a full path to an executable (whisper-helper.exe for Windows, a whisper helper script for Linux/MacOS)
 
@@ -40,10 +54,16 @@ This repository provides an Audacity plugin and a companion Windows pipe server 
 
 ### Usage
 
-1. If you are on Linux or MacOS, launch the Python's pipe server from the directory that contains both the Python script and `whisper-helper.exe`:
+1. If you are on Windows and chose Option B (Python pipe server), or if you are on Linux or MacOS, launch the Python's pipe server from the directory that contains both the Python script and `whisper-helper.exe`:
 
+   **Windows:**
    ```bat
-   py -3 remote_whisper_pipe_server.py
+   py -3 remote_whisper_pipe_server_windows.py
+   ```
+   
+   **Linux/MacOS:**
+   ```bash
+   python3 remote_whisper_pipe_server_macos.py
    ```
 
    Leave this window running while you use Audacity.
