@@ -68,19 +68,17 @@ The **easiest way** to use this plugin is via the Nyquist script, which requires
 ┌─────────────────────┐            ┌────────────▼───────────┐            ┌────────────────────────┐
 │  Temporary WAV      │───────────▶│  External Utility      │◀──────────▶│ Whisper STT Server     │
 └─────────────────────┘ 3. Read    └────────────┬───────────┘ 4. Transcribe └────────────────────────┘
-                          audio                  │ 5. Labels file
+                          audio                  │ 5. Create labels
                                                  ↓
                                     ┌────────────────────────┐
                                     │  Labels (tsv)          │
                                     └────────────┬───────────┘
-                                                 │ 6. Send result back
+                                                 │ 6. Send result
+                                                 │    back via pipe
 ┌─────────────────────┐            ┌────────────▼───────────┐
 │  Audacity           │◀───────────│  remote_whisper_pipe_  │
 │  (Creates labels)   │ 7. Create  │  server.py              │
 └─────────────────────┘    track   └────────────────────────┘
-           ▲                                    
-           │ 8. Read labels                     
-           └────────────────────────────────────┘
 ```
 
 ## Expected STT API
