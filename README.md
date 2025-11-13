@@ -54,7 +54,7 @@ This repository provides an Audacity plugin and a companion Windows pipe server 
 
 ### Usage
 
-1. If you are on Windows and chose Option B (Python pipe server), or if you are on Linux or MacOS, launch the Python's pipe server from the directory that contains both the Python script and `whisper-helper.exe`:
+1. If you are on Windows and chose Option B (Python pipe server), or if you are on Linux or MacOS, launch the Python's pipe server:
 
    **Windows:**
    ```bat
